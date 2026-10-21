@@ -1,0 +1,127 @@
+import Link from 'next/link'
+import { notFound } from 'next/navigation'
+import { requireUser } from '@/lib/auth'
+import { getDealDetail, getNotes, getPropertyNotes } from '@/lib/deals/query'
+import { fullAddress, money, plural } from '@/lib/format'
+import { LAST_ACTIVE_STAGE, STAGES } from '@/lib/stages'
+import { BackLink } from '@/components/BackLink'
+import { FollowUpButton, LeadStatusPills, NoteComposer, NoteFeed, PropertyNotes, StageBar } from './DealParts'
+
+const FROM: Record<string, { label: string; href: string }> = {
+  dashboard: { label: 'Dashboard', href: '/dashboard' },
+  leads: { label: 'Leads', href: '/leads' },
+  board: { label: 'Board', href: '/board' },
+  agents: { label: 'Agents', href: '/agents' },
+  agent: { label: 'agent', href: '/agents' },
+  tasks: { label: 'Tasks', href: '/tasks' },
+}
+
+export async function generateMetadata({ params }: PageProps<'/deals/[id]'>) {
+  const user = await requireUser()
+  const deal = await getDealDetail(user.id, (await params).id, user.settings)
+  return { title: `${deal ? deal.address : 'Deal'} · Zoodealio CRM` }
+}
+
+export default async function DealPage({ params, searchParams }: PageProps<'/deals/[id]'>) {
+  const user = await requireUser()
+  const { id } = await params
+  const sp = await searchParams
+  const deal = await getDealDetail(user.id, id, user.settings)
+  if (!deal) notFound()
+
+  const showAll = sp.notes === 'all'
+  const [feed, propertyNotes] = await Promise.all([
+    getNotes(user.id, id, user.settings.timezone, showAll),
+    getPropertyNotes(user.id, id, user.settings.timezone),
+  ])
+
+  const from = FROM[typeof sp.from === 'string' ? sp.from : ''] ?? FROM.leads
+  const label = fullAddress(deal)
+  const stale = deal.stage <= LAST_ACTIVE_STAGE && deal.daysSinceContact >= user.settings.staleDays
+  const contact =
+    deal.daysSinceContact === 0
+      ? 'Contacted today'
+      : stale
+        ? `Stale: no contact in ${deal.daysSinceContact} days`
+        : `Last contact ${plural(deal.daysSinceContact, 'day')} ago`
+  const fu = deal.followUp
+  const fuLabel = !fu ? 'None scheduled' : fu.days < 0 ? `Overdue by ${plural(-fu.days, 'day')}` : fu.days === 0 ? 'Today' : `In ${plural(fu.days, 'day')}`
+  const fuColor = !fu ? '#71717a' : fu.days < 0 ? '#e11d74' : fu.days === 0 ? '#b45309' : '#09090b'
+  const a = deal.agent
+
+  return (
+    <>
+      <BackLink label={from.label} fallback={from.href} />
+
+      <div className="flex flex-col gap-5 rounded-xl border border-border bg-white px-7 pb-5 pt-6">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="flex flex-col gap-2.5">
+            <div className="flex flex-wrap items-center gap-2">
+              <LeadStatusPills dealId={deal.id} current={deal.leadStatus} />
+              <span className="text-[13px] font-bold" style={{ color: stale ? '#b45309' : '#71717a' }}>{contact}</span>
+            </div>
+            <h1 className="text-[32px] font-bold leading-[1.1] tracking-[-0.03em]">{label}</h1>
+          </div>
+          <div className="flex items-center gap-2.5">
+            <Link href={`/deals/${deal.id}/edit`} className="text-sm font-bold">Edit deal</Link>
+            <FollowUpButton dealId={deal.id} dealLabel={label} />
+          </div>
+        </div>
+        <StageBar dealId={deal.id} stage={deal.stage} />
+      </div>
+
+      <div className="grid grid-cols-1 items-start gap-5 min-[1200px]:grid-cols-[minmax(0,1fr)_340px]">
+        <div className="flex flex-col gap-3.5">
+          <NoteComposer dealId={deal.id} />
+          {feed.items.length === 0 && (
+            <p className="rounded-[14px] border border-border bg-white p-4 text-sm text-gray-500">No exchanges logged yet. Log your first call, text or email above.</p>
+          )}
+          <NoteFeed items={feed.items} />
+          {feed.hasMore && (
+            <Link href={`/deals/${deal.id}?notes=all${typeof sp.from === 'string' ? `&from=${sp.from}` : ''}`} className="w-fit text-sm font-bold">Show older notes</Link>
+          )}
+        </div>
+
+        <div className="flex flex-col gap-3.5">
+          <div className="flex flex-col gap-1 rounded-xl bg-magenta p-5 text-white">
+            <span className="text-[13px] opacity-90">Current offers</span>
+            <div className="flex items-baseline justify-between"><span className="text-[13px] opacity-90">Cash</span><span className="text-[26px] font-extrabold tracking-[-0.04em]">{money(deal.cashOffer)}</span></div>
+            <div className="flex items-baseline justify-between"><span className="text-[13px] opacity-90">Cash+</span><span className="text-[26px] font-extrabold tracking-[-0.04em]">{money(deal.cashPlusOffer)}</span></div>
+            <span className="text-[13px]">{STAGES[deal.stage].name}</span>
+          </div>
+
+          <div className="flex flex-col gap-3 rounded-[14px] border border-border bg-white p-[18px]">
+            <h2 className="text-[13px] font-bold uppercase tracking-[.04em]">Agent</h2>
+            {a ? (
+              <>
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-lg font-bold">{a.name}</span>
+                  {a.agency && <span className="text-sm text-gray-500">{a.agency}</span>}
+                </div>
+                <div className="flex flex-col gap-1.5 text-sm text-gray-700">
+                  {a.phone && <a href={`tel:${a.phone}`} className="text-gray-700 hover:text-magenta">{a.phone}</a>}
+                  {a.email && <a href={`mailto:${a.email}`} className="break-all text-gray-700 hover:text-magenta">{a.email}</a>}
+                  {!a.phone && !a.email && <span className="text-gray-500">No contact details yet.</span>}
+                </div>
+                <Link href={`/agents/${a.id}?from=deal`} className="text-sm font-bold">
+                  View all {a.dealCount} {a.dealCount === 1 ? 'deal' : 'deals'} with {a.name.split(' ')[0]}
+                </Link>
+              </>
+            ) : (
+              <p className="text-sm text-gray-500">No agent on this deal. <Link href={`/deals/${deal.id}/edit`} className="font-bold">Add one</Link></p>
+            )}
+          </div>
+
+          <div className="flex flex-col gap-1.5 rounded-[14px] border border-border bg-white p-[18px]">
+            <h2 className="text-[13px] font-bold uppercase tracking-[.04em]">Next follow-up</h2>
+            <span className="text-xl font-extrabold tracking-[-0.02em]" style={{ color: fuColor }}>{fuLabel}</span>
+            {fu && <span className="text-sm text-gray-500">{fu.title} · {fu.method}</span>}
+            {fu?.description && <span className="text-sm leading-normal text-gray-700">{fu.description}</span>}
+          </div>
+
+          <PropertyNotes dealId={deal.id} items={propertyNotes} />
+        </div>
+      </div>
+    </>
+  )
+}

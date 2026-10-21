@@ -1,26 +1,87 @@
 @import "tailwindcss";
+@import "./_styles/tokens.css";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
+/* Design tokens (from design-system/styles.css) exposed as Tailwind utilities. */
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-magenta: var(--magenta);
+  --color-magenta-dark: var(--magenta-dark);
+  --color-magenta-bright: var(--magenta-bright);
+  --color-ink: var(--ink);
+  --color-charcoal: var(--charcoal);
+  --color-gray-700: var(--gray-700);
+  --color-gray-500: var(--gray-500);
+  --color-gray-400: var(--gray-400);
+  --color-gray-300: var(--gray-300);
+  --color-border: var(--border);
+  --color-bg: var(--bg);
+  --color-bg-warm: var(--bg-warm);
+  --color-white: var(--white);
+  --color-green: var(--green);
+  --color-amber: var(--amber);
+
+  --font-sans: var(--sans);
+
+  --radius-sm: var(--radius-sm);
+  --radius-md: var(--radius-md);
+  --radius-lg: var(--radius-lg);
+  --radius-xl: var(--radius-xl);
+  --radius-2xl: var(--radius-2xl);
+  --radius-3xl: var(--radius-3xl);
+
+  --shadow-sm: var(--shadow-sm);
+  --shadow-lg: var(--shadow-lg);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer base {
+  body {
+    margin: 0;
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--ink);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  a {
+    color: var(--magenta);
+    text-decoration: none;
+    transition: color var(--dur-fast);
+  }
+  a:hover {
+    color: var(--magenta-dark);
+  }
+  textarea,
+  input,
+  select,
+  button {
+    font-family: inherit;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* Visible keyboard focus everywhere (mouse clicks don't trigger it). */
+:focus-visible {
+  outline: 2px solid var(--magenta);
+  outline-offset: 2px;
+}
+.bg-charcoal :focus-visible {
+  outline-color: var(--white);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  .skeleton {
+    animation: none;
+  }
+}
+
+@keyframes skeleton-pulse {
+  50% {
+    opacity: 0.5;
+  }
+}
+.skeleton {
+  background: var(--bg-warm);
+  border-radius: var(--radius-sm);
+  animation: skeleton-pulse 1.4s var(--ease) infinite;
 }

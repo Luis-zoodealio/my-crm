@@ -1,0 +1,123 @@
+/* ===========================================================
+   Zoodealio — Design System
+   Global tokens: colors, fonts, type scale, spacing, radii
+   Extracted from the Zoodealio marketing site.
+   =========================================================== */
+@import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap");
+
+:root {
+  /* ---------- Brand ---------- */
+  --magenta: #ac0a55;        /* primary */
+  --magenta-dark: #8e0746;   /* hover / pressed */
+  --magenta-bright: #e11d74; /* accent highlight */
+
+  /* ---------- Ink & neutrals ---------- */
+  --ink: #09090b;
+  --ink-2: #0e0e10;
+  --charcoal: #1c1b1f;       /* dark section bg */
+  --charcoal-2: #242328;
+  --gray-700: #3f3f46;
+  --gray-500: #71717a;
+  --gray-400: #a1a1aa;
+  --gray-300: #d4d4d8;
+  --border: #e4e4e7;
+
+  /* ---------- Surfaces ---------- */
+  --bg: #f7f7f7;
+  --bg-warm: #f3f2f0;
+  --white: #fdfdfd;
+
+  /* ---------- Support ---------- */
+  --green: #10b981;
+  --green-deep: #059669;
+  --amber: #f59e0b;
+
+  /* ---------- Type families ---------- */
+  --sans: "Helvetica Neue", Helvetica, Arial, sans-serif; /* @kind font */
+  --display: "Helvetica Neue", Helvetica, Arial, sans-serif; /* @kind font */
+  /* legacy aliases — all now resolve to Helvetica Neue */
+  --jakarta: var(--sans); /* @kind font */
+  --inter: var(--sans); /* @kind font */
+  --dm: var(--sans); /* @kind font */
+  --open: "Plus Jakarta Sans", var(--sans); /* @kind font */
+
+  /* ---------- Type scale ---------- */
+  --fs-display: clamp(40px, 5.6vw, 76px); /* @kind font */
+  --fs-h1: clamp(38px, 4.6vw, 62px); /* @kind font */
+  --fs-h2: clamp(30px, 3.6vw, 46px); /* @kind font */
+  --fs-h2-sm: clamp(28px, 3.4vw, 44px); /* @kind font */
+  --fs-h3: 32px; /* @kind font */
+  --fs-title: 24px; /* @kind font */
+  --fs-lg: 18px; /* @kind font */
+  --fs-body: 16px; /* @kind font */
+  --fs-sm: 15px; /* @kind font */
+  --fs-xs: 14px; /* @kind font */
+  --fs-2xs: 13px; /* @kind font */
+  --fs-3xs: 12px; /* @kind font */
+
+  --lh-tight: 1.04; /* @kind other */
+  --lh-head: 1.1; /* @kind other */
+  --lh-body: 1.55; /* @kind other */
+
+  --ls-display: -0.04em; /* @kind other */
+  --ls-head: -0.03em; /* @kind other */
+  --ls-tight: -0.01em; /* @kind other */
+
+  --fw-regular: 400; /* @kind other */
+  --fw-medium: 500; /* @kind other */
+  --fw-semibold: 600; /* @kind other */
+  --fw-bold: 700; /* @kind other */
+  --fw-heavy: 800; /* @kind other */
+
+  /* ---------- Radii ---------- */
+  --radius-sm: 8px;
+  --radius-md: 10px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-2xl: 18px;
+  --radius-3xl: 20px;
+  --radius-pill: 999px;
+  --radius: var(--radius-xl);
+
+  /* ---------- Spacing scale ---------- */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --space-20: 80px;
+
+  /* ---------- Layout ---------- */
+  --maxw: 1440px;
+  --pad: clamp(20px, 6vw, 120px);
+
+  /* ---------- Elevation ---------- */
+  --shadow-sm: 0 2px 14px rgba(0, 0, 0, .04);
+  --shadow-md: 0 18px 44px rgba(0, 0, 0, .08);
+  --shadow-lg: 0 24px 60px rgba(0, 0, 0, .28);
+  --shadow-brand: 0 18px 44px rgba(172, 10, 85, .1);
+
+  /* ---------- Motion ---------- */
+  --ease: cubic-bezier(.4, 0, .2, 1); /* @kind other */
+  --dur-fast: .15s; /* @kind other */
+  --dur: .2s; /* @kind other */
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0;
+  font-family: var(--sans);
+  background: var(--bg);
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+img { display: block; max-width: 100%; }
+a { color: var(--magenta); text-decoration: none; transition: color var(--dur-fast); }
+a:hover { color: var(--magenta-dark); }
