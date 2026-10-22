@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="_ds/webpage-design-system-c11f2e9e-5eb7-49ac-adea-a611c0884a6e/styles.css">
+<script src="_ds/webpage-design-system-c11f2e9e-5eb7-49ac-adea-a611c0884a6e/_ds_bundle.js"></script>
+<style>body{margin:0}a{color:var(--magenta)}a:hover{color:var(--magenta-dark)}textarea{font-family:inherit}</style>
+</helmet>
+<div style="display:flex;min-height:100vh;font-family:var(--sans);color:var(--ink);background:var(--bg)">
+
+<div style="width:232px;flex:none;background:var(--charcoal);color:var(--white);padding:24px 16px;display:flex;flex-direction:column;gap:28px;position:sticky;top:0;height:100vh;box-sizing:border-box">
+  <div style="display:flex;align-items:baseline;gap:8px;padding:0 10px"><span style="font-size:22px;font-weight:800;letter-spacing:-0.04em">Zoodealio</span><span style="font-size:12px;font-weight:700;color:var(--magenta-bright)">CRM</span></div>
+  <div style="display:flex;flex-direction:column;gap:4px">
+    <sc-for list="{{ nav }}" as="n" hint-placeholder-count="4">
+      <div onClick="{{ n.go }}" style="cursor:pointer;display:flex;justify-content:space-between;align-items:center;padding:11px 12px;border-radius:10px;font-size:15px;font-weight:600;background:{{ n.bg }};color:{{ n.fg }}"><span>{{ n.label }}</span><span style="font-size:12px;font-weight:700;opacity:.9">{{ n.badge }}</span></div>
+    </sc-for>
+  </div>
+  <div style="margin-top:auto;padding:0 10px;font-size:13px;color:var(--gray-400);line-height:1.5">Stale after 7 days without contact</div>
+</div>
+
+<div style="flex:1;min-width:0;padding:32px 36px 48px;display:flex;flex-direction:column;gap:24px">
+
+<sc-if value="{{ isDash }}" hint-placeholder-val="{{ true }}">
+  <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap">
+    <div style="display:flex;flex-direction:column;gap:4px"><span style="font-size:14px;color:var(--gray-500)">Tuesday, October 20</span><span style="font-size:32px;font-weight:700;letter-spacing:-0.03em;line-height:1.1">{{ greeting }}</span></div>
+    <x-import component-from-global-scope="ZoodealioWebpageDesignSystem_c11f2e.Button" variant="primary" size="sm" hint-size="auto,38px">+ Add deal</x-import>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px">
+    <sc-for list="{{ tiles }}" as="s" hint-placeholder-count="4">
+      <div onClick="{{ s.go }}" style="cursor:pointer;background:{{ s.bg }};color:{{ s.fg }};border:1px solid var(--border);border-radius:16px;padding:20px;display:flex;flex-direction:column;gap:6px;box-shadow:var(--shadow-sm)"><span style="font-size:13px;opacity:.85">{{ s.label }}</span><span style="font-size:36px;font-weight:800;letter-spacing:-0.04em">{{ s.value }}</span><span style="font-size:13px;opacity:.85">{{ s.note }}</span></div>
+    </sc-for>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;align-items:start">
+    <sc-for list="{{ lists }}" as="L" hint-placeholder-count="3">
+      <div style="background:var(--white);border:1px solid var(--border);border-radius:16px;padding:22px;display:flex;flex-direction:column;gap:2px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><span style="font-size:18px;font-weight:700">{{ L.title }}</span><span style="font-size:13px;font-weight:700;padding:2px 10px;border-radius:999px;background:{{ L.bg }};color:{{ L.color }}">{{ L.count }}</span></div>
+        <sc-for list="{{ L.items }}" as="i" hint-placeholder-count="3">
+          <div onClick="{{ i.open }}" style="cursor:pointer;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;padding:12px 0;border-top:1px solid var(--border)"><div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:15px;font-weight:700">{{ i.addr }}</span><span style="font-size:13px;color:var(--gray-700)">{{ i.agent }}</span><span style="font-size:13px;color:var(--gray-500)">{{ i.sub }}</span></div><span style="font-size:12px;font-weight:700;color:{{ L.color }}">{{ i.tag }}</span></div>
+        </sc-for>
+      </div>
+    </sc-for>
+  </div>
+</sc-if>
+
+<sc-if value="{{ isLeads }}" hint-placeholder-val="{{ false }}">
+  <div style="display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:20px;align-items:start">
+    <div style="background:var(--white);border:1px solid var(--border);border-radius:16px;padding:24px;display:flex;flex-direction:column;gap:16px">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px"><span style="font-size:24px;font-weight:700;letter-spacing:-0.03em">Leads <span style="font-size:14px;font-weight:500;color:var(--gray-500);letter-spacing:0;margin-left:6px">{{ resultLabel }}</span></span>
+        <span onClick="{{ togglePanel }}" style="cursor:pointer;padding:8px 14px;border-radius:10px;font-size:13px;font-weight:700;border:1px solid var(--border);background:{{ panelBg }};color:{{ panelFg }}">{{ panelLabel }}</span></div>
+      <div style="display:flex;gap:8px;font-size:13px;font-weight:500;flex-wrap:wrap;align-items:center"><span style="color:var(--gray-500);padding:7px 0">Saved views</span>
+        <sc-for list="{{ views }}" as="v" hint-placeholder-count="4"><span style="display:inline-flex;align-items:center;gap:6px;padding:7px 8px 7px 13px;border-radius:999px;background:{{ v.bg }};color:{{ v.fg }}"><span onClick="{{ v.apply }}" style="cursor:pointer">{{ v.name }}</span><span onClick="{{ v.remove }}" title="Delete view" style="cursor:pointer;opacity:.6;font-size:16px;line-height:1;padding:0 4px">×</span></span></sc-for></div>
+      <sc-if value="{{ panelOpen }}" hint-placeholder-val="{{ false }}">
+        <div style="background:var(--bg);border:1px solid var(--border);border-radius:14px;padding:18px;display:flex;flex-direction:column;gap:18px">
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.04em">Filters</span><span style="font-size:13px;color:var(--gray-500)">Deals must match all</span></div>
+            <sc-if value="{{ noRules }}" hint-placeholder-val="{{ false }}"><span style="font-size:14px;color:var(--gray-500)">No filters. Showing every deal.</span></sc-if>
+            <sc-for list="{{ rules }}" as="r" hint-placeholder-count="2">
+              <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+                <select value="{{ r.field }}" onChange="{{ r.onField }}" style="border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-size:14px;background:var(--white);font-family:inherit;color:var(--ink)"><sc-for list="{{ r.fieldOpts }}" as="o" hint-placeholder-count="3"><option value="{{ o.v }}">{{ o.l }}</option></sc-for></select>
+                <select value="{{ r.op }}" onChange="{{ r.onOp }}" style="border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-size:14px;background:var(--white);font-family:inherit;color:var(--ink)"><sc-for list="{{ r.opOpts }}" as="o" hint-placeholder-count="2"><option value="{{ o.v }}">{{ o.l }}</option></sc-for></select>
+                <sc-if value="{{ r.isSel }}" hint-placeholder-val="{{ false }}"><select value="{{ r.value }}" onChange="{{ r.onValue }}" style="border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-size:14px;background:var(--white);font-family:inherit;color:var(--ink)"><sc-for list="{{ r.valOpts }}" as="o" hint-placeholder-count="3"><option value="{{ o.v }}">{{ o.l }}</option></sc-for></select></sc-if>
+                <sc-if value="{{ r.isInput }}" hint-placeholder-val="{{ false }}"><input type="{{ r.inType }}" value="{{ r.value }}" onChange="{{ r.onValue }}" placeholder="{{ r.ph }}" style="border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-size:14px;background:var(--white);font-family:inherit;width:150px"></input></sc-if>
+                <span style="font-size:13px;color:var(--gray-500)">{{ r.unit }}</span>
+                <span onClick="{{ r.remove }}" style="cursor:pointer;font-size:18px;color:var(--gray-500);padding:0 6px">×</span>
+              </div>
+            </sc-for>
+            <span onClick="{{ addRule }}" style="cursor:pointer;font-size:14px;font-weight:700;color:var(--magenta);width:fit-content">+ Add filter</span>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:10px;border-top:1px solid var(--border);padding-top:16px">
+            <div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.04em">Sort</span><span style="font-size:13px;color:var(--gray-500)">Applied in order. You can also click a column header.</span></div>
+            <sc-if value="{{ noSorts }}" hint-placeholder-val="{{ false }}"><span style="font-size:14px;color:var(--gray-500)">No sorting.</span></sc-if>
+            <sc-for list="{{ sorts }}" as="s" hint-placeholder-count="2">
+              <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+                <span style="font-size:13px;color:var(--gray-500);width:52px">{{ s.pos }}</span>
+                <select value="{{ s.k }}" onChange="{{ s.onField }}" style="border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-size:14px;background:var(--white);font-family:inherit;color:var(--ink)"><sc-for list="{{ s.fieldOpts }}" as="o" hint-placeholder-count="3"><option value="{{ o.v }}">{{ o.l }}</option></sc-for></select>
+                <span onClick="{{ s.flip }}" style="cursor:pointer;padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--white);font-size:14px">{{ s.dirLabel }}</span>
+                <span onClick="{{ s.remove }}" style="cursor:pointer;font-size:18px;color:var(--gray-500);padding:0 6px">×</span>
+              </div>
+            </sc-for>
+            <span onClick="{{ addSort }}" style="cursor:pointer;font-size:14px;font-weight:700;color:var(--magenta);width:fit-content">+ Add sort</span>
+          </div>
+          <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;border-top:1px solid var(--border);padding-top:16px">
+            <input type="text" value="{{ viewName }}" onChange="{{ onViewName }}" placeholder="Name this view" style="border:1px solid var(--border);border-radius:8px;padding:9px 12px;font-size:14px;background:var(--white);font-family:inherit;width:200px"></input>
+            <span onClick="{{ saveNew }}" style="cursor:pointer;padding:8px 14px;border-radius:10px;font-size:13px;font-weight:700;background:var(--magenta);color:var(--white)">Save as new view</span>
+            <sc-if value="{{ canUpdate }}" hint-placeholder-val="{{ false }}"><span onClick="{{ updateView }}" style="cursor:pointer;padding:8px 14px;border-radius:10px;font-size:13px;font-weight:700;background:var(--white);color:var(--ink);border:1px solid var(--border)">{{ updateLabel }}</span></sc-if>
+            <span onClick="{{ clearAll }}" style="cursor:pointer;font-size:14px;color:var(--gray-500);margin-left:auto">Clear all</span>
+          </div>
+        </div>
+      </sc-if>
+      <sc-if value="{{ hasSel }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;justify-content:space-between;align-items:center;background:var(--charcoal);color:var(--white);border-radius:12px;padding:10px 14px;font-size:14px;gap:10px;flex-wrap:wrap"><span style="font-weight:600">{{ selCount }} selected</span><div style="display:flex;gap:8px">
+          <span onClick="{{ bulkNext }}" style="cursor:pointer;padding:6px 12px;border-radius:8px;background:rgba(255,255,255,.12)">Move to next stage</span>
+          <span onClick="{{ bulkHot }}" style="cursor:pointer;padding:6px 12px;border-radius:8px;background:var(--magenta);font-weight:700">Mark hot</span>
+          <span onClick="{{ clearSel }}" style="cursor:pointer;padding:6px 12px;border-radius:8px;background:rgba(255,255,255,.12)">Clear</span></div></div>
+      </sc-if>
+      <div style="overflow-x:auto"><div style="min-width:760px">
+        <div style="display:grid;grid-template-columns:24px 90px minmax(0,1.7fr) minmax(0,1.4fr) 110px 150px;gap:12px;padding:10px 12px;font-size:12px;font-weight:600;color:var(--gray-500);text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--border)"><span></span><span onClick="{{ hT.go }}" style="cursor:pointer">{{ hT.label }}</span><span onClick="{{ hA.go }}" style="cursor:pointer">{{ hA.label }}</span><span onClick="{{ hS.go }}" style="cursor:pointer">{{ hS.label }}</span><span onClick="{{ hD.go }}" style="cursor:pointer">{{ hD.label }}</span><span onClick="{{ hO.go }}" style="cursor:pointer">{{ hO.label }}</span></div>
+        <sc-for list="{{ leads }}" as="d" hint-placeholder-count="8">
+          <div style="display:grid;grid-template-columns:24px 90px minmax(0,1.7fr) minmax(0,1.4fr) 110px 150px;gap:12px;align-items:center;padding:13px 12px;border-bottom:1px solid var(--border);background:{{ d.rowbg }}">
+            <span onClick="{{ d.toggle }}" style="cursor:pointer;width:18px;height:18px;border-radius:5px;border:2px solid {{ d.chkBorder }};background:{{ d.chk }}"></span>
+            <span style="display:inline-flex;gap:6px;align-items:center;font-size:12px;font-weight:700;padding:3px 9px;border-radius:999px;background:{{ d.tbg }};color:{{ d.tfg }};width:fit-content"><span style="width:6px;height:6px;border-radius:50%;background:{{ d.tfg }}"></span>{{ d.temp }}</span>
+            <div onClick="{{ d.open }}" style="cursor:pointer;display:flex;flex-direction:column;gap:2px"><span style="font-size:15px;font-weight:700">{{ d.fullAddr }}</span><span style="font-size:13px;color:var(--gray-500)">{{ d.agent }}</span></div>
+            <span style="font-size:14px;color:var(--gray-700)">{{ d.stage }}</span>
+            <span style="font-size:13px;font-weight:{{ d.sw }};color:{{ d.sc }}">{{ d.lastLabel }}</span>
+            <div style="display:flex;flex-direction:column;gap:2px;font-size:13px"><div style="display:flex;justify-content:space-between;gap:8px"><span style="color:var(--gray-500)">Cash</span><span style="font-weight:800;letter-spacing:-0.02em">{{ d.offerFmt }}</span></div><div style="display:flex;justify-content:space-between;gap:8px"><span style="color:var(--gray-500)">Cash+</span><span style="font-weight:800;letter-spacing:-0.02em">{{ d.plusFmt }}</span></div></div>
+          </div>
+        </sc-for>
+      </div></div>
+    </div>
+    <div style="background:var(--white);border:1px solid var(--border);border-radius:16px;padding:22px;display:flex;flex-direction:column;gap:12px">
+      <span style="font-size:18px;font-weight:700;letter-spacing:-0.02em">Follow-up queue</span>
+      <sc-for list="{{ queue }}" as="q" hint-placeholder-count="5">
+        <div onClick="{{ q.open }}" style="cursor:pointer;background:var(--bg);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:6px">
+          <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:12px;font-weight:700;color:{{ q.color }}">{{ q.when }}</span><span style="font-size:12px;color:var(--gray-500)">{{ q.how }}</span></div>
+          <span style="font-size:15px;font-weight:700">{{ q.fullAddr }}</span><span style="font-size:13px;color:var(--gray-700);line-height:1.4">{{ q.note }}</span>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ isBoard }}" hint-placeholder-val="{{ false }}">
+  <div style="display:flex;justify-content:space-between;align-items:baseline;gap:16px;flex-wrap:wrap"><span style="font-size:24px;font-weight:700;letter-spacing:-0.03em">Board</span><span style="font-size:14px;color:var(--gray-500)">12 stages. Scroll sideways.</span></div>
+  <div style="display:flex;gap:14px;overflow-x:auto;align-items:flex-start;padding-bottom:12px">
+    <sc-for list="{{ board }}" as="col" hint-placeholder-count="6">
+      <div style="flex:none;width:252px;display:flex;flex-direction:column;gap:10px;opacity:{{ col.op }}">
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:0 2px;gap:8px"><span style="font-size:12px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;line-height:1.2">{{ col.name }}</span><span style="font-size:12px;font-weight:700;color:var(--gray-500);background:var(--bg-warm);padding:2px 8px;border-radius:999px">{{ col.count }}</span></div>
+        <div style="height:3px;border-radius:3px;background:{{ col.color }}"></div>
+        <sc-for list="{{ col.deals }}" as="d" hint-placeholder-count="1">
+          <div onClick="{{ d.open }}" style="cursor:pointer;background:var(--white);border:1px solid var(--border);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:10px;box-shadow:var(--shadow-sm)">
+            <div style="display:flex;justify-content:space-between;align-items:center"><span style="display:inline-flex;gap:6px;align-items:center;font-size:12px;font-weight:700;padding:3px 9px;border-radius:999px;background:{{ d.tbg }};color:{{ d.tfg }}"><span style="width:6px;height:6px;border-radius:50%;background:{{ d.tfg }}"></span>{{ d.temp }}</span><span style="font-size:12px;font-weight:{{ d.sw }};color:{{ d.sc }}">{{ d.lastLabel }}</span></div>
+            <div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:15px;font-weight:700;letter-spacing:-0.01em">{{ d.fullAddr }}</span><span style="font-size:13px;color:var(--gray-500)">{{ d.agent }}</span></div>
+            <div style="display:flex;flex-direction:column;gap:4px;border-top:1px solid var(--border);padding-top:10px"><span style="font-size:12px;color:var(--gray-500)">Offers</span><div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-size:12px;color:var(--gray-500)">Cash</span><span style="font-size:16px;font-weight:800;letter-spacing:-0.03em">{{ d.cashK }}</span></div><div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-size:12px;color:var(--gray-500)">Cash+</span><span style="font-size:16px;font-weight:800;letter-spacing:-0.03em">{{ d.plusK }}</span></div></div>
+          </div>
+        </sc-for>
+      </div>
+    </sc-for>
+  </div>
+</sc-if>
+
+<sc-if value="{{ isDeal }}" hint-placeholder-val="{{ false }}">
+  <div onClick="{{ back }}" style="cursor:pointer;font-size:14px;font-weight:700;color:var(--magenta);width:fit-content">{{ backLabel }}</div>
+  <div style="background:var(--white);border:1px solid var(--border);border-radius:16px;padding:24px 28px 20px;display:flex;flex-direction:column;gap:20px">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap">
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <sc-for list="{{ temps }}" as="t" hint-placeholder-count="3"><span onClick="{{ t.set }}" style="cursor:pointer;display:inline-flex;gap:6px;align-items:center;font-size:12px;font-weight:700;padding:4px 11px;border-radius:999px;background:{{ t.bg }};color:{{ t.fg }};border:1.5px solid {{ t.border }}"><span style="width:6px;height:6px;border-radius:50%;background:{{ t.fg }}"></span>{{ t.label }}</span></sc-for>
+          <span style="font-size:13px;font-weight:700;color:{{ cur.sc }}">{{ cur.lastLabelLong }}</span>
+        </div>
+        <span style="font-size:32px;font-weight:700;letter-spacing:-0.03em;line-height:1.1">{{ cur.fullAddr }}</span>
+      </div>
+      <x-import component-from-global-scope="ZoodealioWebpageDesignSystem_c11f2e.Button" variant="outline" size="sm" hint-size="auto,38px" onClick="{{ openFollowup }}">Set next follow up</x-import>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:4px">
+      <sc-for list="{{ stepper }}" as="s" hint-placeholder-count="12">
+        <div onClick="{{ s.set }}" style="cursor:pointer;display:flex;flex-direction:column;gap:6px"><div style="height:6px;border-radius:3px;background:{{ s.bg }}"></div><span style="font-size:11px;line-height:1.2;color:{{ s.fg }};font-weight:{{ s.w }}">{{ s.name }}</span></div>
+      </sc-for>
+    </div>
+  </div>
+  <div style="display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:20px;align-items:start">
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <div style="background:var(--white);border:1px solid var(--border);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:12px">
+        <textarea value="{{ draft }}" onChange="{{ onDraft }}" placeholder="Add a note about this deal" rows="3" style="border:none;outline:none;resize:none;font-size:15px;line-height:1.5;color:var(--ink);background:transparent"></textarea>
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
+          <div style="display:flex;gap:6px;font-size:13px;font-weight:500"><sc-for list="{{ noteTypes }}" as="nt" hint-placeholder-count="5"><span onClick="{{ nt.set }}" style="cursor:pointer;padding:6px 12px;border-radius:999px;background:{{ nt.bg }};color:{{ nt.fg }}">{{ nt.label }}</span></sc-for></div>
+          <x-import component-from-global-scope="ZoodealioWebpageDesignSystem_c11f2e.Button" variant="primary" size="xs" hint-size="auto,32px" onClick="{{ saveNote }}">Log an exchange</x-import>
+        </div>
+      </div>
+      <sc-for list="{{ feed }}" as="n" hint-placeholder-count="4">
+        <div style="background:var(--white);border:1px solid var(--border);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:8px">
+          <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:12px;font-weight:700;padding:3px 10px;border-radius:999px;background:var(--bg-warm);color:var(--gray-700)">{{ n.type }}</span><span style="font-size:12px;color:var(--gray-500)">{{ n.when }}</span></div>
+          <span style="font-size:15px;line-height:1.5">{{ n.text }}</span>
+        </div>
+      </sc-for>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <div style="background:var(--magenta);color:var(--white);border-radius:16px;padding:20px;display:flex;flex-direction:column;gap:4px"><span style="font-size:13px;opacity:.9">Current offers</span><div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-size:13px;opacity:.9">Cash</span><span style="font-size:26px;font-weight:800;letter-spacing:-0.04em">{{ cur.offerFmt }}</span></div><div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-size:13px;opacity:.9">Cash+</span><span style="font-size:26px;font-weight:800;letter-spacing:-0.04em">{{ cur.plusFmt }}</span></div><span style="font-size:13px">{{ cur.stage }}</span></div>
+      <div style="background:var(--white);border:1px solid var(--border);border-radius:14px;padding:18px;display:flex;flex-direction:column;gap:12px">
+        <span style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.04em">Agent</span>
+        <div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:18px;font-weight:700">{{ cur.agent }}</span><span style="font-size:14px;color:var(--gray-500)">{{ cur.agency }}</span></div>
+        <div style="display:flex;flex-direction:column;gap:6px;font-size:14px;color:var(--gray-700)"><span>{{ cur.phone }}</span><span>{{ cur.email }}</span></div>
+        <span onClick="{{ openCurAgent }}" style="cursor:pointer;font-size:14px;font-weight:700;color:var(--magenta)">{{ agentLink }}</span>
+      </div>
+      <div style="background:var(--white);border:1px solid var(--border);border-radius:14px;padding:18px;display:flex;flex-direction:column;gap:6px"><span style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.04em">Next follow-up</span><span style="font-size:20px;font-weight:800;letter-spacing:-0.02em;color:{{ cur.fuColor }}">{{ cur.fuLabel }}</span><span style="font-size:14px;color:var(--gray-500)">{{ cur.fuNote }}</span></div>
+      <div style="background:var(--white);border:1px solid var(--border);border-radius:14px;padding:18px;display:flex;flex-direction:column;gap:12px">
+        <span style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.04em">Property notes</span>
+        <textarea value="{{ propDraft }}" onChange="{{ onPropDraft }}" placeholder="Condition, access, neighborhood, anything about the property" rows="3" style="border:1px solid var(--border);border-radius:10px;padding:10px 12px;outline:none;resize:vertical;font-size:14px;line-height:1.5;color:var(--ink);background:var(--bg)"></textarea>
+        <x-import component-from-global-scope="ZoodealioWebpageDesignSystem_c11f2e.Button" variant="outline" size="xs" hint-size="auto,32px" onClick="{{ savePropNote }}">Save property note</x-import>
+        <sc-for list="{{ cur.propNotes }}" as="p" hint-placeholder-count="1">
+          <div style="border-top:1px solid var(--border);padding-top:12px;display:flex;flex-direction:column;gap:4px"><span style="font-size:12px;color:var(--gray-500)">{{ p.when }}</span><span style="font-size:14px;line-height:1.5">{{ p.text }}</span></div>
+        </sc-for>
+      </div>
+    </div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ isAgents }}" hint-placeholder-val="{{ false }}">
+  <div style="display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap"><span style="font-size:24px;font-weight:700;letter-spacing:-0.03em">Agents</span>
+    <input type="text" value="{{ agentQ }}" onChange="{{ onAgentQ }}" placeholder="Search agent name or property address" style="border:1px solid var(--border);border-radius:10px;padding:11px 14px;font-size:14px;background:var(--white);font-family:inherit;width:min(420px,100%);outline:none"></input></div>
+  <sc-if value="{{ noAgents }}" hint-placeholder-val="{{ false }}"><span style="font-size:15px;color:var(--gray-500)">No agents or properties match that search.</span></sc-if>
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px">
+    <sc-for list="{{ agents }}" as="a" hint-placeholder-count="6">
+      <div onClick="{{ a.open }}" style="cursor:pointer;background:var(--white);border:1px solid var(--border);border-radius:16px;padding:20px;display:flex;flex-direction:column;gap:12px;box-shadow:var(--shadow-sm)">
+        <div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:18px;font-weight:700">{{ a.name }}</span><span style="font-size:14px;color:var(--gray-500)">{{ a.agency }}</span></div>
+        <sc-for list="{{ a.matches }}" as="m" hint-placeholder-count="0"><span style="font-size:13px;font-weight:600;color:var(--magenta)">{{ m.addr }}</span></sc-for>
+        <div style="display:flex;justify-content:space-between;align-items:baseline;border-top:1px solid var(--border);padding-top:12px"><span style="font-size:13px;color:var(--gray-500)">{{ a.countLabel }}</span><span style="font-size:18px;font-weight:800;letter-spacing:-0.03em">{{ a.total }}</span></div>
+      </div>
+    </sc-for>
+  </div>
+</sc-if>
+
+<sc-if value="{{ isAgent }}" hint-placeholder-val="{{ false }}">
+  <div onClick="{{ back }}" style="cursor:pointer;font-size:14px;font-weight:700;color:var(--magenta);width:fit-content">{{ backLabel }}</div>
+  <div style="display:grid;grid-template-columns:320px minmax(0,1fr);gap:20px;align-items:start">
+    <div style="background:var(--white);border:1px solid var(--border);border-radius:16px;padding:24px;display:flex;flex-direction:column;gap:14px">
+      <div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:28px;font-weight:700;letter-spacing:-0.03em;line-height:1.1">{{ ag.name }}</span><span style="font-size:15px;color:var(--gray-500)">{{ ag.agency }}</span></div>
+      <div style="display:flex;flex-direction:column;gap:6px;font-size:14px;color:var(--gray-700)"><span>{{ ag.phone }}</span><span>{{ ag.email }}</span></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;border-top:1px solid var(--border);padding-top:14px">
+        <div><div style="font-size:12px;color:var(--gray-500)">Deals</div><div style="font-size:24px;font-weight:800;letter-spacing:-0.03em">{{ ag.count }}</div></div>
+        <div><div style="font-size:12px;color:var(--gray-500)">Total offers</div><div style="font-size:24px;font-weight:800;letter-spacing:-0.03em">{{ ag.total }}</div></div>
+      </div>
+    </div>
+    <div style="background:var(--white);border:1px solid var(--border);border-radius:16px;padding:22px;display:flex;flex-direction:column;gap:2px">
+      <span style="font-size:18px;font-weight:700;margin-bottom:8px">Deals with {{ ag.name }}</span>
+      <sc-for list="{{ ag.deals }}" as="d" hint-placeholder-count="2">
+        <div onClick="{{ d.open }}" style="cursor:pointer;display:grid;grid-template-columns:90px minmax(0,1.5fr) minmax(0,1.2fr) 150px;gap:12px;align-items:center;padding:14px 0;border-top:1px solid var(--border)">
+          <span style="display:inline-flex;gap:6px;align-items:center;font-size:12px;font-weight:700;padding:3px 9px;border-radius:999px;background:{{ d.tbg }};color:{{ d.tfg }};width:fit-content"><span style="width:6px;height:6px;border-radius:50%;background:{{ d.tfg }}"></span>{{ d.temp }}</span>
+          <span style="font-size:15px;font-weight:700">{{ d.fullAddr }}</span><span style="font-size:14px;color:var(--gray-700)">{{ d.stage }}</span><div style="display:flex;flex-direction:column;gap:2px;font-size:13px"><div style="display:flex;justify-content:space-between;gap:8px"><span style="color:var(--gray-500)">Cash</span><span style="font-weight:800;letter-spacing:-0.02em">{{ d.offerFmt }}</span></div><div style="display:flex;justify-content:space-between;gap:8px"><span style="color:var(--gray-500)">Cash+</span><span style="font-weight:800;letter-spacing:-0.02em">{{ d.plusFmt }}</span></div></div>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ isTasks }}" hint-placeholder-val="{{ false }}">
+  <div style="display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap"><span style="font-size:24px;font-weight:700;letter-spacing:-0.03em">Tasks <span style="font-size:14px;font-weight:500;color:var(--gray-500);letter-spacing:0;margin-left:6px">{{ taskSummary }}</span></span>
+    <x-import component-from-global-scope="ZoodealioWebpageDesignSystem_c11f2e.Button" variant="primary" size="sm" hint-size="auto,38px" onClick="{{ openNewTask }}">+ New task</x-import></div>
+  <span style="font-size:14px;color:var(--gray-500)">Scheduling a follow-up on a deal adds it here.</span>
+  <sc-for list="{{ tgroups }}" as="G" hint-placeholder-count="3">
+    <div style="background:var(--white);border:1px solid var(--border);border-radius:16px;padding:22px;display:flex;flex-direction:column;gap:2px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><span style="font-size:18px;font-weight:700">{{ G.title }}</span><span style="font-size:13px;font-weight:700;padding:2px 10px;border-radius:999px;background:{{ G.bg }};color:{{ G.color }}">{{ G.count }}</span></div>
+      <sc-for list="{{ G.items }}" as="k" hint-placeholder-count="3">
+        <div style="display:grid;grid-template-columns:22px minmax(0,1fr) auto auto;gap:14px;align-items:center;padding:13px 0;border-top:1px solid var(--border);opacity:{{ k.op }}">
+          <span onClick="{{ k.toggle }}" style="cursor:pointer;width:18px;height:18px;border-radius:5px;border:2px solid {{ k.chkB }};background:{{ k.chk }}"></span>
+          <div style="display:flex;flex-direction:column;gap:2px;min-width:0"><span style="font-size:15px;font-weight:600;text-decoration:{{ k.deco }}">{{ k.title }}</span><span onClick="{{ k.open }}" style="cursor:pointer;font-size:13px;color:var(--gray-500)">{{ k.sub }}</span><sc-if value="{{ k.hasNotes }}" hint-placeholder-val="{{ false }}"><span style="font-size:13px;color:var(--gray-700);line-height:1.4;margin-top:2px">{{ k.notes }}</span></sc-if></div>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px"><span style="font-size:13px;font-weight:700;color:{{ G.color }}">{{ k.whenLabel }}</span><span style="font-size:12px;color:var(--gray-500)">{{ k.source }}</span></div>
+          <span onClick="{{ k.remove }}" style="cursor:pointer;font-size:18px;color:var(--gray-400);padding:0 6px">×</span>
+        </div>
+      </sc-for>
+    </div>
+  </sc-for>
+</sc-if>
+
+<sc-if value="{{ modalOpen }}" hint-placeholder-val="{{ false }}">
+  <div onClick="{{ closeModal }}" style="position:fixed;inset:0;z-index:50;background:rgba(9,9,11,.5);display:flex;align-items:center;justify-content:center;padding:20px">
+    <div onClick="{{ stop }}" style="width:460px;max-width:100%;background:var(--white);border-radius:18px;padding:26px;display:flex;flex-direction:column;gap:18px;box-shadow:var(--shadow-lg)">
+      <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:22px;font-weight:700;letter-spacing:-0.03em">{{ md.heading }}</span><span onClick="{{ closeModal }}" style="cursor:pointer;font-size:22px;color:var(--gray-500);padding:0 4px">×</span></div>
+      <sc-if value="{{ md.isFollowup }}" hint-placeholder-val="{{ false }}"><span style="font-size:14px;color:var(--gray-500)">{{ md.dealAddr }}</span></sc-if>
+      <sc-if value="{{ md.isTask }}" hint-placeholder-val="{{ false }}"><div style="display:flex;flex-direction:column;gap:6px"><span style="font-size:13px;font-weight:600">Deal (optional)</span>
+        <sc-if value="{{ md.hasDeal }}" hint-placeholder-val="{{ false }}"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px;border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:14px;background:var(--bg)"><span>{{ md.dealAddr }}</span><span onClick="{{ clearDeal }}" style="cursor:pointer;font-size:18px;color:var(--gray-500);line-height:1">×</span></div></sc-if>
+        <sc-if value="{{ md.noDeal }}" hint-placeholder-val="{{ true }}"><input type="text" value="{{ dealQ }}" onChange="{{ onDealQ }}" placeholder="Search by address or agent" style="border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:14px;background:var(--white);font-family:inherit;color:var(--ink);outline:none"></input></sc-if>
+        <sc-if value="{{ md.showResults }}" hint-placeholder-val="{{ false }}"><div style="border:1px solid var(--border);border-radius:8px;overflow:hidden">
+          <sc-for list="{{ dealResults }}" as="rs" hint-placeholder-count="3"><div onClick="{{ rs.pick }}" style="cursor:pointer;padding:10px 12px;display:flex;flex-direction:column;gap:1px;border-top:1px solid var(--border)"><span style="font-size:14px;font-weight:600">{{ rs.addr }}</span><span style="font-size:12px;color:var(--gray-500)">{{ rs.agent }}</span></div></sc-for></div></sc-if>
+        <sc-if value="{{ md.noResults }}" hint-placeholder-val="{{ false }}"><span style="font-size:13px;color:var(--gray-500)">No matching deals.</span></sc-if>
+      </div></sc-if>
+      <div style="display:flex;flex-direction:column;gap:6px"><span style="font-size:13px;font-weight:600">Title</span><input type="text" value="{{ mTitle }}" onChange="{{ onMTitle }}" placeholder="{{ md.ph }}" style="border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:14px;background:var(--white);font-family:inherit;color:var(--ink);outline:none"></input></div>
+      <div style="display:flex;flex-direction:column;gap:6px"><span style="font-size:13px;font-weight:600">Description</span><textarea value="{{ mNotes }}" onChange="{{ onMNotes }}" rows="3" placeholder="Notes for this task" style="border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:14px;background:var(--white);font-family:inherit;color:var(--ink);outline:none;resize:vertical;line-height:1.5"></textarea></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div style="display:flex;flex-direction:column;gap:6px"><span style="font-size:13px;font-weight:600">Date</span><input type="date" value="{{ mDate }}" onChange="{{ onMDate }}" style="border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:14px;background:var(--white);font-family:inherit;color:var(--ink);outline:none"></input></div>
+        <div style="display:flex;flex-direction:column;gap:6px"><span style="font-size:13px;font-weight:600">Time</span><input type="time" value="{{ mTime }}" onChange="{{ onMTime }}" style="border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:14px;background:var(--white);font-family:inherit;color:var(--ink);outline:none"></input></div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px"><span style="font-size:13px;font-weight:600">How</span><div style="display:flex;gap:6px;flex-wrap:wrap;font-size:13px;font-weight:500"><sc-for list="{{ mMethods }}" as="mm" hint-placeholder-count="5"><span onClick="{{ mm.set }}" style="cursor:pointer;padding:7px 13px;border-radius:999px;background:{{ mm.bg }};color:{{ mm.fg }}">{{ mm.label }}</span></sc-for></div></div>
+      <div style="display:flex;justify-content:flex-end;gap:10px">
+        <x-import component-from-global-scope="ZoodealioWebpageDesignSystem_c11f2e.Button" variant="outline" size="sm" hint-size="auto,38px" onClick="{{ closeModal }}">Cancel</x-import>
+        <x-import component-from-global-scope="ZoodealioWebpageDesignSystem_c11f2e.Button" variant="primary" size="sm" hint-size="auto,38px" onClick="{{ submitModal }}">{{ md.submit }}</x-import>
+      </div>
+    </div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ confirmOpen }}" hint-placeholder-val="{{ false }}">
+  <div onClick="{{ cancelDel }}" style="position:fixed;inset:0;z-index:60;background:rgba(9,9,11,.5);display:flex;align-items:center;justify-content:center;padding:20px">
+    <div onClick="{{ stop }}" style="width:400px;max-width:100%;background:var(--white);border-radius:18px;padding:26px;display:flex;flex-direction:column;gap:14px;box-shadow:var(--shadow-lg)">
+      <span style="font-size:20px;font-weight:700;letter-spacing:-0.03em">Are you sure you want to delete?</span>
+      <span style="font-size:14px;color:var(--gray-700);line-height:1.5">{{ confirmTitle }}</span>
+      <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:6px">
+        <x-import component-from-global-scope="ZoodealioWebpageDesignSystem_c11f2e.Button" variant="outline" size="sm" hint-size="auto,38px" onClick="{{ cancelDel }}">Cancel</x-import>
+        <x-import component-from-global-scope="ZoodealioWebpageDesignSystem_c11f2e.Button" variant="primary" size="sm" hint-size="auto,38px" onClick="{{ doDel }}">Delete</x-import>
+      </div>
+    </div>
+  </div>
+</sc-if>
+
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { view: 'dash', prev: 'dash', from: 'agents', dealId: null, agent: null, propDraft: '', sel: {}, rules: Component.seedViews()[0].rules, sorts: Component.seedViews()[0].sorts, views: Component.seedViews(), activeView: 'All active', dirty: false, panel: false, viewName: '', draft: '', noteType: 'Call', deals: Component.seed(), tasks: Component.seedTasks(Component.seed()), modal: null, confirmDel: null, agentQ: '' };
+  static seedViews() {
+    const R = (field, op, value) => ({ field, op, value }), act = R('status', 'eq', 'Active');
+    return [
+      { name: 'All active', rules: [act], sorts: [{ k: 'temp', dir: 'asc' }, { k: 'days', dir: 'desc' }] },
+      { name: 'Hot only', rules: [act, R('temp', 'eq', 'Hot')], sorts: [{ k: 'days', dir: 'desc' }] },
+      { name: 'Stale 7d+', rules: [act, R('days', 'gte', '7')], sorts: [{ k: 'days', dir: 'desc' }] },
+      { name: 'Overdue follow-ups', rules: [act, R('fu', 'lte', '-1')], sorts: [{ k: 'fu', dir: 'asc' }] }
+    ];
+  }
+  static seedTasks(deals) {
+    const iso = n => { const d = new Date(2026, 9, 20 + n); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
+    const a = deals.filter(d => d.si < 10 && d.fu <= 14).map((d, i) => ({ id: i + 1, title: d.fuNote, dealId: d.id, date: iso(d.fu), time: i % 2 ? '14:00' : '10:00', method: d.fuHow, done: false, source: 'Follow-up' }));
+    return a.concat([{ id: 100, title: 'Update the comping report template', notes: 'Add the Cash+ line.', dealId: null, date: iso(0), time: '16:00', method: 'Task', done: false, source: 'Manual' }, { id: 101, title: 'Send weekly pipeline summary', dealId: null, date: iso(2), time: '09:00', method: 'Email', done: false, source: 'Manual' }]);
+  }
+  static seed() {
+    const N = (t, w, x) => ({ type: t, when: w, text: x });
+    return [
+      { id: 1, addr: '218 Cedar Ave', city: 'Dallas, TX 75208', agent: 'Sandra Whitfield', agency: 'Lakeview Realty', phone: '(214) 555-0187', email: 's.whitfield@lakeviewrealty.com', si: 6, offer: 398000, temp: 'Hot', days: 8, propNotes: [{ when: 'Oct 6', text: '3 bed, 2 bath. Roof about 15 years old. Vacant, lockbox on the front door.' }], fu: -1, fuNote: 'Call Sandra about the counter', fuHow: 'Call', notes: [
+        N('Call', 'Oct 12', 'Sandra says the seller wants $421K and a 10-day close. Told her I would review and call back.'), N('Email', 'Oct 10', 'Sent offer details and proof of funds.'), N('Voicemail', 'Oct 8', 'Left a message asking about the disputed comps.'), N('Text', 'Oct 6', 'Agent said the seller disagrees with the 14 Maple comp.'), N('Call', 'Oct 4', 'First call. Seller is motivated and wants to move before the holidays.')] },
+      { id: 2, addr: '1428 Alder Ct', city: 'Austin, TX 78704', agent: 'Marco Rivera', agency: 'Rivera & Co', phone: '(512) 555-0142', email: 'marco@riveraco.com', si: 8, offer: 485000, temp: 'Hot', days: 2, fu: 0, fuNote: 'Send inspection access', fuHow: 'Email', notes: [N('Call', 'Oct 18', 'Offer accepted at $485,000. Inspection scheduled.'), N('Email', 'Oct 14', 'Sent purchase agreement.')] },
+      { id: 3, addr: '65 Harbor Way', city: 'Houston, TX 77002', agent: 'Kline Realty Group', agency: 'Kline Realty Group', phone: '(713) 555-0166', email: 'deals@klinerealty.com', si: 4, offer: 910000, temp: 'Hot', days: 1, fu: 0, fuNote: 'Check if details were reviewed', fuHow: 'Text', notes: [N('Email', 'Oct 19', 'Offer is ready. Waiting on internal sign-off before sharing details.')] },
+      { id: 4, addr: '930 Larkspur Ln', city: 'Plano, TX 75024', agent: 'Dana Okafor', agency: 'Okafor Homes', phone: '(972) 555-0119', email: 'dana@okaforhomes.com', si: 3, offer: 640000, temp: 'Warm', days: 3, fu: 1, fuNote: 'Ask for seller timeline', fuHow: 'Call', notes: [N('Call', 'Oct 17', 'Dana requested property condition details before the seller will talk.')] },
+      { id: 5, addr: '77 Bishop St', city: 'Fort Worth, TX 76102', agent: 'Lee Chen', agency: 'Chen Holdings', phone: '(817) 555-0173', email: 'lee@chenholdings.com', si: 1, offer: 312000, temp: 'Warm', days: 9, fu: -1, fuNote: 'Re-engage on comps', fuHow: 'Voicemail', notes: [N('Text', 'Oct 11', 'Lee viewed the comping report.')] },
+      { id: 6, addr: '12 Mill Rd', city: 'Frisco, TX 75034', agent: 'Priya Patel', agency: 'Patel Realty', phone: '(469) 555-0128', email: 'priya@patelrealty.com', si: 2, offer: 275000, temp: 'Cold', days: 12, fu: 4, fuNote: 'Try again after agent disputes comps', fuHow: 'Email', notes: [N('Email', 'Oct 8', 'Agent disputes the comps and says the home is worth more.')] },
+      { id: 7, addr: '4410 Ridge Dr', city: 'Dallas, TX 75209', agent: 'Joe Alvarez', agency: 'Alvarez Group', phone: '(214) 555-0150', email: 'joe@alvarezgroup.com', si: 0, offer: 520000, temp: 'Cold', days: 0, fu: 6, fuNote: 'Follow up on comping report', fuHow: 'Email', notes: [N('Email', 'Today', 'Sent comping report.')] },
+      { id: 8, addr: '802 Pine Hollow', city: 'Austin, TX 78745', agent: 'Tia Brooks', agency: 'Brooks Realty', phone: '(512) 555-0191', email: 'tia@brooksrealty.com', si: 9, offer: 455000, temp: 'Warm', days: 4, fu: 0, fuNote: 'Confirm appraisal date', fuHow: 'Call', notes: [N('Call', 'Oct 16', 'Inspection period started. Report due Oct 30.')] },
+      { id: 9, addr: '36 Sutter Pl', city: 'Dallas, TX 75214', agent: 'Ruth Nguyen', agency: 'Nguyen Realty', phone: '(214) 555-0104', email: 'ruth@nguyenrealty.com', si: 10, offer: 362000, temp: 'Warm', days: 6, fu: 30, fuNote: 'Closed. Ask for referrals.', fuHow: 'Email', notes: [N('Call', 'Oct 15', 'Closed and funded.')] },
+      { id: 10, addr: '19 Oak Lane', city: 'Round Rock, TX 78664', agent: 'Bill Hart', agency: 'Hart Realty', phone: '(512) 555-0135', email: 'bill@hartrealty.com', si: 11, offer: 330000, temp: 'Dead', days: 21, fu: 60, fuNote: 'Dead. Revisit in 60 days.', fuHow: 'Email', notes: [N('Call', 'Sep 29', 'Seller took another offer.')] },
+      { id: 11, addr: '501 Willow Bend', city: 'Dallas, TX 75218', agent: 'Sandra Whitfield', agency: 'Lakeview Realty', phone: '(214) 555-0187', email: 's.whitfield@lakeviewrealty.com', si: 5, offer: 372000, temp: 'Warm', days: 2, fu: 2, fuNote: 'Await seller response', fuHow: 'Text', notes: [N('Email', 'Oct 18', 'Shared offer details with Sandra.')] },
+      { id: 12, addr: '88 Garner Rd', city: 'Houston, TX 77008', agent: 'Kline Realty Group', agency: 'Kline Realty Group', phone: '(713) 555-0166', email: 'deals@klinerealty.com', si: 7, offer: 745000, temp: 'Hot', days: 0, fu: 1, fuNote: 'Send contract draft', fuHow: 'Email', notes: [N('Call', 'Today', 'Our offer was selected. Contract draft next.')] }
+    ];
+  }
+  renderVals() {
+    const s = this.state, M = '#ac0a55', K = '#a1a1aa', G = '#10b981', A = '#f59e0b';
+    const SN = ['Comping complete', 'Comping viewed', 'Agent disputed comps', 'Details requested', 'Offer ready', 'Details shared', 'Agent countered', 'Offer selected', 'Under contract', 'Inspection period', 'Closed', 'Lost / dead'];
+    const SC = [K, K, A, '#71717a', '#3b82f6', '#3b82f6', A, '#e11d74', M, '#8e0746', G, '#3f3f46'];
+    const TS = { Hot: ['#fbe6f0', M], Warm: ['#fff4e5', '#b45309'], Cold: ['#e6f0fe', '#1d4ed8'], Dead: ['#e4e4e7', '#3f3f46'] };
+    const money = n => '$' + n.toLocaleString('en-US');
+    const compact = n => n >= 1e6 ? '$' + (n / 1e6).toFixed(2).replace(/\.?0+$/, '') + 'M' : '$' + Math.round(n / 1000) + 'K';
+    const setS = o => this.setState(o);
+    const open = id => () => setS(st => ({ prev: st.view === 'deal' || st.view === 'agent' ? st.prev : st.view, view: 'deal', dealId: id, draft: '', propDraft: '', noteType: 'Call' }));
+    const openAgent = name => () => setS(st => ({ from: st.view === 'deal' ? 'deal' : 'agents', view: 'agent', agent: name }));
+    const go = v => () => setS({ view: v, prev: v });
+    const upd = (id, fn) => setS(st => ({ deals: st.deals.map(d => d.id === id ? fn(d) : d) }));
+    const live = d => d.si < 10;
+    const dec = d => {
+      const t = TS[d.temp], stale = d.days >= 7 && live(d), on = !!s.sel[d.id];
+      const fuLabel = d.fu < 0 ? 'Overdue by ' + (-d.fu) + (d.fu === -1 ? ' day' : ' days') : d.fu === 0 ? 'Today' : 'In ' + d.fu + (d.fu === 1 ? ' day' : ' days');
+      return Object.assign({}, d, { fullAddr: d.addr + ', ' + d.city, propNotes: d.propNotes || [], tbg: t[0], tfg: t[1], stage: SN[d.si], offerFmt: money(d.offer), plusFmt: money(Math.round(d.offer * 1.08)), cashK: compact(d.offer), plusK: compact(Math.round(d.offer * 1.08)), stale,
+        lastLabel: d.days === 0 ? 'Today' : stale ? d.days + 'd, stale' : d.days + 'd ago', lastLabelLong: d.days === 0 ? 'Contacted today' : stale ? 'Stale: no contact in ' + d.days + ' days' : 'Last contact ' + d.days + ' days ago',
+        sc: stale ? '#b45309' : '#71717a', sw: stale ? 700 : 500, fuLabel, fuColor: d.fu < 0 ? '#e11d74' : d.fu === 0 ? '#b45309' : '#09090b',
+        rowbg: on ? '#fdf4f8' : 'transparent', chk: on ? M : 'transparent', chkBorder: on ? M : '#d4d4d8',
+        open: open(d.id), toggle: () => setS(st => ({ sel: Object.assign({}, st.sel, { [d.id]: !st.sel[d.id] }) })) });
+    };
+    const D = s.deals.map(dec), liveD = D.filter(live);
+    const sum = a => a.reduce((x, d) => x + d.offer, 0);
+    const hot = liveD.filter(d => d.temp === 'Hot'), over = liveD.filter(d => d.fu < 0), today = liveD.filter(d => d.fu === 0), stale = liveD.filter(d => d.stale), uc = D.filter(d => d.si === 8 || d.si === 9);
+    const mk = (title, color, bg, arr, sub) => ({ title, color, bg, count: arr.length, items: arr.map(d => ({ addr: d.fullAddr, agent: d.agent, sub: sub(d), tag: title === 'Stale, 7+ days' ? d.days + 'd' : d.fuHow, open: d.open })) });
+    const nav = [['dash', 'Dashboard', ''], ['leads', 'Leads', liveD.length], ['board', 'Board', ''], ['tasks', 'Tasks', s.tasks.filter(x => !x.done).length], ['agents', 'Agents', '']].map(n => {
+      const act = s.view === n[0] || (s.view === 'deal' && s.prev === n[0]) || (s.view === 'agent' && n[0] === 'agents');
+      return { label: n[1], badge: n[2], go: go(n[0]), bg: act ? M : 'transparent', fg: act ? '#fdfdfd' : '#d4d4d8' };
+    });
+    const ord = { Hot: 0, Warm: 1, Cold: 2, Dead: 3 };
+    const FIELDS = [
+      { k: 'status', l: 'Status', t: 'enum', opts: ['Active', 'Closed', 'Lost / dead'], get: d => d.si < 10 ? 'Active' : d.si === 10 ? 'Closed' : 'Lost / dead' },
+      { k: 'temp', l: 'Lead status', t: 'enum', opts: ['Hot', 'Warm', 'Cold', 'Dead'], get: d => d.temp },
+      { k: 'stage', l: 'Stage', t: 'enum', opts: SN, get: d => SN[d.si] },
+      { k: 'days', l: 'Days since last contact', t: 'num', unit: 'days', get: d => d.days },
+      { k: 'offer', l: 'Offer', t: 'num', unit: 'dollars', get: d => d.offer },
+      { k: 'fu', l: 'Follow-up (days from today)', t: 'num', unit: 'days, negative = overdue', get: d => d.fu },
+      { k: 'agent', l: 'Agent', t: 'enum', opts: [...new Set(D.map(d => d.agent))], get: d => d.agent },
+      { k: 'q', l: 'Address or agent', t: 'text', get: d => (d.fullAddr + ' ' + d.agent + ' ' + d.agency).toLowerCase() }
+    ];
+    const OPS = { enum: [['eq', 'is'], ['ne', 'is not']], num: [['gte', 'at least'], ['lte', 'at most'], ['eq', 'exactly']], text: [['has', 'contains']] };
+    const SORTS = [
+      { k: 'temp', l: 'Lead status', get: d => ord[d.temp], lab: ['Hot first', 'Dead first'] }, { k: 'stage', l: 'Stage', get: d => d.si, lab: ['Earliest stage first', 'Latest stage first'] },
+      { k: 'days', l: 'Last contact', get: d => d.days, lab: ['Most recent first', 'Longest ago first'] }, { k: 'offer', l: 'Offer', get: d => d.offer, lab: ['Low to high', 'High to low'] },
+      { k: 'fu', l: 'Follow-up date', get: d => d.fu, lab: ['Soonest first', 'Latest first'] }, { k: 'agent', l: 'Agent', get: d => d.agent, lab: ['A to Z', 'Z to A'] }, { k: 'addr', l: 'Address', get: d => d.fullAddr, lab: ['A to Z', 'Z to A'] }
+    ];
+    const FK = k => FIELDS.find(x => x.k === k), SK = k => SORTS.find(x => x.k === k);
+    const newRule = k => { const f = FK(k); return { field: k, op: OPS[f.t][0][0], value: f.t === 'enum' ? f.opts[0] : '' }; };
+    const test = (d, r) => {
+      const f = FK(r.field), v = f.get(d);
+      if (f.t === 'enum') return r.op === 'eq' ? v === r.value : v !== r.value;
+      if (f.t === 'text') return !r.value || v.includes(r.value.toLowerCase());
+      if (r.value === '' || isNaN(Number(r.value))) return true;
+      const n = Number(r.value); return r.op === 'gte' ? v >= n : r.op === 'lte' ? v <= n : v === n;
+    };
+    const setR = fn => setS(st => ({ rules: fn(st.rules), dirty: true }));
+    const setSo = fn => setS(st => ({ sorts: fn(st.sorts), dirty: true }));
+    const clone = x => JSON.parse(JSON.stringify(x));
+    const rulesV = s.rules.map((r, i) => { const f = FK(r.field); return Object.assign({}, r, {
+      fieldOpts: FIELDS.map(x => ({ v: x.k, l: x.l })), opOpts: OPS[f.t].map(o => ({ v: o[0], l: o[1] })), valOpts: (f.opts || []).map(o => ({ v: o, l: o })),
+      isSel: f.t === 'enum', isInput: f.t !== 'enum', inType: f.t === 'num' ? 'number' : 'text', ph: f.t === 'text' ? 'Search' : 'Value', unit: f.unit || '',
+      onField: e => setR(rs => rs.map((x, j) => j === i ? newRule(e.target.value) : x)), onOp: e => setR(rs => rs.map((x, j) => j === i ? Object.assign({}, x, { op: e.target.value }) : x)),
+      onValue: e => setR(rs => rs.map((x, j) => j === i ? Object.assign({}, x, { value: e.target.value }) : x)), remove: () => setR(rs => rs.filter((x, j) => j !== i)) }); });
+    const sortsV = s.sorts.map((so, i) => ({ k: so.k, pos: i === 0 ? 'Sort by' : 'Then by', fieldOpts: SORTS.map(x => ({ v: x.k, l: x.l })), dirLabel: SK(so.k).lab[so.dir === 'asc' ? 0 : 1],
+      onField: e => setSo(ss => ss.map((x, j) => j === i ? Object.assign({}, x, { k: e.target.value }) : x)), flip: () => setSo(ss => ss.map((x, j) => j === i ? Object.assign({}, x, { dir: x.dir === 'asc' ? 'desc' : 'asc' }) : x)), remove: () => setSo(ss => ss.filter((x, j) => j !== i)) }));
+    const viewsV = s.views.map(v => ({ name: v.name, bg: s.activeView === v.name ? '#09090b' : '#f3f2f0', fg: s.activeView === v.name ? '#fdfdfd' : '#3f3f46',
+      apply: () => setS({ rules: clone(v.rules), sorts: clone(v.sorts), activeView: v.name, dirty: false, sel: {} }),
+      remove: () => setS(st => ({ views: st.views.filter(x => x.name !== v.name), activeView: st.activeView === v.name ? null : st.activeView })) }));
+    let leads = D.filter(d => s.rules.every(r => test(d, r)));
+    leads.sort((a, b) => { for (const so of s.sorts) { const g = SK(so.k).get, x = g(a), y = g(b); const c = typeof x === 'string' ? x.localeCompare(y) : x - y; if (c) return so.dir === 'asc' ? c : -c; } return 0; });
+    const sortBy = k => () => setS(st => { const c = st.sorts[0]; return { sorts: [{ k, dir: c && c.k === k && c.dir === 'asc' ? 'desc' : 'asc' }], dirty: true }; });
+    const head = (label, k) => ({ label: label + (s.sorts[0] && s.sorts[0].k === k ? (s.sorts[0].dir === 'asc' ? ' \u2191' : ' \u2193') : ' \u2195'), go: sortBy(k) });
+    const nF = s.rules.length, nS = s.sorts.length;
+    const queue = liveD.filter(d => d.fu <= 2).sort((a, b) => a.fu - b.fu).slice(0, 6).map(d => ({ when: d.fu < 0 ? 'Overdue ' + (-d.fu) + 'd' : d.fu === 0 ? 'Today' : d.fu === 1 ? 'Tomorrow' : 'In 2 days', color: d.fu < 0 ? '#e11d74' : d.fu === 0 ? M : '#b45309', how: d.fuHow, fullAddr: d.fullAddr, note: d.fuNote, open: d.open }));
+    const board = SN.map((name, i) => { const ds = D.filter(d => d.si === i); return { name, color: SC[i], count: ds.length, deals: ds, op: i === 11 ? 0.6 : 1 }; });
+    const cur = D.find(d => d.id === s.dealId) || D[0];
+    const temps = ['Hot', 'Warm', 'Cold', 'Dead'].map(t => ({ label: t, set: () => upd(cur.id, d => Object.assign({}, d, { temp: t })), bg: TS[t][0], fg: TS[t][1], border: cur.temp === t ? TS[t][1] : 'transparent' }));
+    const stepper = SN.map((name, i) => ({ name, set: () => upd(cur.id, d => Object.assign({}, d, { si: i })), bg: i <= cur.si ? (i === cur.si ? M : '#e8a3c2') : '#e4e4e7', fg: i === cur.si ? '#09090b' : '#71717a', w: i === cur.si ? 700 : 500 }));
+    const noteTypes = ['Call', 'Text', 'Email', 'Voicemail', 'Zoom'].map(t => ({ label: t, set: () => setS({ noteType: t }), bg: s.noteType === t ? '#09090b' : '#f3f2f0', fg: s.noteType === t ? '#fdfdfd' : '#3f3f46' }));
+    const agentNames = [...new Set(D.map(d => d.agent))];
+    const aq = s.agentQ.trim().toLowerCase();
+    const agentObj = name => { const ds = D.filter(d => d.agent === name), f = ds[0]; return { name, agency: f.agency, phone: f.phone, email: f.email, count: ds.length, countLabel: ds.length + (ds.length === 1 ? ' deal' : ' deals'), total: compact(sum(ds)), deals: ds, matches: aq ? ds.filter(d => d.fullAddr.toLowerCase().includes(aq)).map(d => ({ addr: d.fullAddr })) : [], open: openAgent(name) }; };
+    const agents = agentNames.map(agentObj).filter(a => !aq || a.name.toLowerCase().includes(aq) || a.agency.toLowerCase().includes(aq) || a.matches.length), ag = agentObj(s.agent || agentNames[0]);
+    const backTo = { dash: 'Dashboard', leads: 'Leads', board: 'Board', agents: 'Agents' };
+    const tiles = [
+      ['Hot leads', hot.length, compact(sum(hot)) + ' in offers', M, '#fdfdfd', 'leads'], ['Overdue follow-ups', over.length, 'Needs a call today', '#fdfdfd', '#09090b', 'leads'],
+      ['Stale, 7+ days', stale.length, 'No contact in a week', '#fdfdfd', '#09090b', 'leads'], ['Under contract', uc.length, compact(sum(uc)), '#fdfdfd', '#09090b', 'board']
+    ].map(t => ({ label: t[0], value: t[1], note: t[2], bg: t[3], fg: t[4], go: () => { const nm = { 'Hot leads': 'Hot only', 'Stale, 7+ days': 'Stale 7d+', 'Overdue follow-ups': 'Overdue follow-ups' }[t[0]]; setS(st => { const v = st.views.find(x => x.name === nm); return nm && v ? { view: 'leads', prev: 'leads', rules: clone(v.rules), sorts: clone(v.sorts), activeView: v.name, dirty: false, sel: {} } : { view: t[5], prev: t[5] }; }); } }));
+    const TISO = '2026-10-20';
+    const ft = tm => { const p = tm.split(':').map(Number); return ((p[0] % 12) || 12) + ':' + String(p[1]).padStart(2, '0') + (p[0] < 12 ? ' AM' : ' PM'); };
+    const dl = dt => new Date(dt + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    const tv = s.tasks.slice().sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time)).map(tk => { const dealT = D.find(d => d.id === tk.dealId); return Object.assign({}, tk, {
+      hasNotes: !!tk.notes, sub: (dealT ? dealT.fullAddr + ' \u00b7 ' + dealT.agent : 'No deal') + ' \u00b7 ' + tk.method, whenLabel: dl(tk.date) + ', ' + ft(tk.time), deco: tk.done ? 'line-through' : 'none', op: tk.done ? 0.5 : 1, chk: tk.done ? M : 'transparent', chkB: tk.done ? M : '#d4d4d8',
+      toggle: () => setS(st => ({ tasks: st.tasks.map(x => x.id === tk.id ? Object.assign({}, x, { done: !x.done }) : x) })), open: dealT ? dealT.open : () => {}, remove: () => setS({ confirmDel: tk.id }) }); });
+    const tg = (title, color, bg, items) => ({ title, color, bg, count: items.length, items });
+    const tgroups = [tg('Overdue', '#e11d74', '#fbe6f0', tv.filter(x => !x.done && x.date < TISO)), tg('Today', '#b45309', '#fff4e5', tv.filter(x => !x.done && x.date === TISO)), tg('Upcoming', '#3f3f46', '#f3f2f0', tv.filter(x => !x.done && x.date > TISO)), tg('Completed', '#71717a', '#f3f2f0', tv.filter(x => x.done))].filter(g => g.count > 0);
+    const md = s.modal || { kind: 'task', dealId: '', title: '', date: '', time: '', method: 'Call' };
+    const mf = k => e => setS(st => ({ modal: Object.assign({}, st.modal, { [k]: e.target.value }) }));
+    const dq = (md.dealQ || '').trim().toLowerCase();
+    const dres = !dq ? [] : D.filter(d => (d.fullAddr + ' ' + d.agent).toLowerCase().includes(dq)).slice(0, 6).map(d => ({ addr: d.fullAddr, agent: d.agent, pick: () => setS(st => ({ modal: Object.assign({}, st.modal, { dealId: String(d.id), dealQ: '' }) })) }));
+    const mMethods = ['Call', 'Text', 'Email', 'Voicemail', 'Zoom'].map(m => ({ label: m, set: () => setS(st => ({ modal: Object.assign({}, st.modal, { method: m }) })), bg: md.method === m ? '#09090b' : '#f3f2f0', fg: md.method === m ? '#fdfdfd' : '#3f3f46' }));
+    const submitModal = () => setS(st => {
+      const m = st.modal; if (!m || !m.date) return {};
+      const did = m.dealId === '' ? null : Number(m.dealId), title = m.title.trim() || (m.kind === 'followup' ? 'Follow up' : '');
+      if (!title) return {};
+      const days = Math.round((new Date(m.date + 'T00:00:00') - new Date(2026, 9, 20)) / 864e5);
+      const task = { id: Date.now(), title, notes: (m.notes || '').trim(), dealId: did, date: m.date, time: m.time || '09:00', method: m.method, done: false, source: m.kind === 'followup' ? 'Follow-up' : 'Manual' };
+      return { tasks: st.tasks.concat([task]), modal: null, deals: m.kind === 'followup' ? st.deals.map(d => d.id === did ? Object.assign({}, d, { fu: days, fuNote: title, fuHow: m.method }) : d) : st.deals };
+    });
+    const selIds = Object.keys(s.sel).filter(k => s.sel[k]).map(Number);
+    return {
+      nav, isDash: s.view === 'dash', isLeads: s.view === 'leads', isBoard: s.view === 'board', isDeal: s.view === 'deal', isAgents: s.view === 'agents', isAgent: s.view === 'agent', isTasks: s.view === 'tasks',
+      greeting: over.length + ' follow-ups are overdue. ' + hot.length + ' hot leads to work.', tiles,
+      lists: [mk('Overdue', '#e11d74', '#fbe6f0', over, d => d.fuNote), mk('Today', '#b45309', '#fff4e5', today, d => d.fuNote), mk('Stale, 7+ days', '#3f3f46', '#f3f2f0', stale, d => d.temp + ', ' + d.stage)],
+      rules: rulesV, sorts: sortsV, views: viewsV, leads, queue, resultLabel: leads.length + ' of ' + D.length + ' deals', noRules: nF === 0, noSorts: nS === 0,
+      panelOpen: s.panel, togglePanel: () => setS(st => ({ panel: !st.panel })), panelLabel: 'Filters (' + nF + ') \u00b7 Sort (' + nS + ')', panelBg: s.panel ? '#09090b' : '#fdfdfd', panelFg: s.panel ? '#fdfdfd' : '#09090b',
+      addRule: () => setR(rs => rs.concat([newRule('temp')])), addSort: () => setSo(ss => ss.concat([{ k: 'days', dir: 'desc' }])),
+      viewName: s.viewName, onViewName: e => setS({ viewName: e.target.value }), canUpdate: !!s.activeView && s.dirty, updateLabel: 'Update "' + s.activeView + '"',
+      saveNew: () => { const n = s.viewName.trim(); if (!n) return; setS(st => ({ views: st.views.filter(v => v.name !== n).concat([{ name: n, rules: clone(st.rules), sorts: clone(st.sorts) }]), activeView: n, dirty: false, viewName: '' })); },
+      updateView: () => setS(st => ({ views: st.views.map(v => v.name === st.activeView ? { name: v.name, rules: clone(st.rules), sorts: clone(st.sorts) } : v), dirty: false })),
+      clearAll: () => setS({ rules: [], sorts: [], activeView: null, dirty: false }),
+      hT: head('Lead', 'temp'), hA: head('Property / agent', 'addr'), hS: head('Stage', 'stage'), hO: head('Offers', 'offer'), hD: head('Last contact', 'days'), hasSel: selIds.length > 0, selCount: selIds.length, clearSel: () => setS({ sel: {} }),
+      bulkHot: () => setS(st => ({ deals: st.deals.map(d => st.sel[d.id] ? Object.assign({}, d, { temp: 'Hot' }) : d), sel: {} })),
+      bulkNext: () => setS(st => ({ deals: st.deals.map(d => st.sel[d.id] ? Object.assign({}, d, { si: Math.min(d.si + 1, 11) }) : d), sel: {} })),
+      board, cur, temps, stepper, noteTypes, draft: s.draft, onDraft: e => setS({ draft: e.target.value }),
+      feed: cur.notes, saveNote: () => { if (!s.draft.trim()) return; upd(cur.id, d => Object.assign({}, d, { days: 0, notes: [{ type: s.noteType, when: 'Just now', text: s.draft.trim() }].concat(d.notes) })); setS({ draft: '' }); },
+      propDraft: s.propDraft, onPropDraft: e => setS({ propDraft: e.target.value }),
+      savePropNote: () => { if (!s.propDraft.trim()) return; upd(cur.id, d => Object.assign({}, d, { propNotes: [{ when: 'Just now', text: s.propDraft.trim() }].concat(d.propNotes || []) })); setS({ propDraft: '' }); },
+      back: () => setS(st => ({ view: st.view === 'agent' ? st.from : st.prev })),
+      backLabel: '\u2190 Back to ' + (s.view === 'agent' ? (s.from === 'deal' ? 'deal' : 'Agents') : backTo[s.prev] || 'Dashboard'),
+      openCurAgent: openAgent(cur.agent), agentLink: 'View all ' + agentObj(cur.agent).count + ' deals with ' + cur.agent.split(' ')[0],
+      agents, ag, agentQ: s.agentQ, onAgentQ: e => setS({ agentQ: e.target.value }), noAgents: agents.length === 0,
+      confirmOpen: s.confirmDel != null, confirmTitle: (s.tasks.find(x => x.id === s.confirmDel) || { title: '' }).title, cancelDel: () => setS({ confirmDel: null }), doDel: () => setS(st => ({ tasks: st.tasks.filter(x => x.id !== st.confirmDel), confirmDel: null })),
+      tgroups, openNewTask: () => setS({ modal: { kind: 'task', dealId: '', title: '', notes: '', dealQ: '', date: '2026-10-21', time: '09:00', method: 'Call' } }),
+      openFollowup: () => setS({ modal: { kind: 'followup', dealId: cur.id, title: '', notes: '', dealQ: '', date: '2026-10-21', time: '09:00', method: 'Call' } }),
+      modalOpen: !!s.modal, md: Object.assign({}, md, { heading: md.kind === 'followup' ? 'Set next follow-up' : 'New task', isFollowup: md.kind === 'followup', isTask: md.kind === 'task', dealAddr: (D.find(d => String(d.id) === String(md.dealId)) || { fullAddr: '' }).fullAddr, hasDeal: md.dealId !== '' && md.dealId != null, noDeal: md.dealId === '' || md.dealId == null, showResults: dq.length > 0 && dres.length > 0, noResults: dq.length > 0 && dres.length === 0, ph: md.kind === 'followup' ? 'Follow up' : 'Task', submit: md.kind === 'followup' ? 'Schedule follow-up' : 'Add task' }), closeModal: () => setS({ modal: null }), stop: e => e.stopPropagation(),
+      dealQ: md.dealQ || '', onDealQ: mf('dealQ'), dealResults: dres, clearDeal: () => setS(st => ({ modal: Object.assign({}, st.modal, { dealId: '' }) })), mNotes: md.notes || '', onMNotes: mf('notes'),
+      mTitle: md.title, onMTitle: mf('title'), mDate: md.date, onMDate: mf('date'), mTime: md.time, onMTime: mf('time'), mDeal: String(md.dealId), onMDeal: mf('dealId'),
+      dealOpts: [{ v: '', l: 'No deal' }].concat(D.map(d => ({ v: String(d.id), l: d.fullAddr }))), mMethods, submitModal,
+      taskSummary: s.tasks.filter(x => !x.done).length + ' open'
+    };
+  }
+}
+</script>
+</body>
+</html>

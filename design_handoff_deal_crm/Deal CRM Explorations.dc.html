@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<meta name="design_doc_mode" content="canvas">
+<link rel="stylesheet" href="_ds/webpage-design-system-c11f2e9e-5eb7-49ac-adea-a611c0884a6e/styles.css">
+<script src="_ds/webpage-design-system-c11f2e9e-5eb7-49ac-adea-a611c0884a6e/_ds_bundle.js"></script>
+<style>body{margin:0;background:#f0eee9}.dv-turn{padding:40px 44px 32px;border-bottom:1px solid rgba(0,0,0,.08)}.dv-thd{display:flex;align-items:baseline;gap:10px;margin:0 0 20px}.dv-tid{font:600 10px ui-monospace,Menlo,monospace;padding:3px 7px;background:#1a1a1a;color:#fff;border-radius:4px;text-decoration:none}.dv-tname{font:600 13px/1.2 system-ui,sans-serif;color:#1a1a1a}.dv-opts{display:flex;flex-wrap:wrap;gap:28px;align-items:flex-start}.dv-opt{flex:none;display:flex;flex-direction:column;gap:9px;scroll-margin-top:16px}.dv-oid{font:600 10.5px ui-monospace,Menlo,monospace;padding:3px 7px;background:rgba(0,0,0,.08);color:#1a1a1a;border-radius:5px;text-decoration:none}.dv-olabel{display:flex;align-items:baseline;gap:8px;font:400 11px/1.3 system-ui,sans-serif;color:rgba(0,0,0,.55)}.dv-card{max-width:100%;background:#fff;border:1px solid rgba(0,0,0,.08);border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,.06);overflow:hidden}.dv-opt:target .dv-oid{background:#2a78d6;color:#fff}.dv-next{margin:22px 0 0;font:12px/1.5 system-ui,sans-serif;color:rgba(0,0,0,.5)}</style>
+</helmet>
+<section class="dv-turn" id="t2">
+<div class="dv-thd"><a class="dv-tid" href="#t2">2</a><span class="dv-tname">Cash-offer pipeline: 12 stages, lead temperature, notes, stale flag at 7 days</span></div>
+<div class="dv-opts">
+
+<div class="dv-opt" id="2a"><div class="dv-olabel"><a class="dv-oid" href="#2a">2a</a>Board, all 12 stages, scrolls sideways</div>
+<div class="dv-card" style="width:1280px;background:var(--bg);font-family:var(--sans);color:var(--ink)">
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:20px 28px;background:var(--white);border-bottom:1px solid var(--border)">
+    <div style="display:flex;align-items:baseline;gap:16px"><span style="font-size:24px;font-weight:700;letter-spacing:-0.03em">Deals</span><span style="font-size:14px;color:var(--gray-500)">10 active · 3 hot · 3 stale</span></div>
+    <div style="display:flex;gap:8px;align-items:center;font-size:13px;font-weight:500">
+      <span style="color:var(--gray-500);margin-right:4px">Saved</span>
+      <span style="padding:7px 14px;border-radius:999px;background:var(--ink);color:var(--white)">All</span>
+      <span style="padding:7px 14px;border-radius:999px;background:#fbe6f0;color:var(--magenta)">Hot only</span>
+      <span style="padding:7px 14px;border-radius:999px;background:#fff4e5;color:#b45309">Stale 7d+</span>
+      <span style="padding:7px 14px;border-radius:999px;background:var(--bg-warm);color:var(--gray-700)">Offers out</span>
+      <x-import component-from-global-scope="ZoodealioWebpageDesignSystem_c11f2e.Button" variant="primary" size="sm" hint-size="auto,38px">+ Add deal</x-import>
+    </div>
+  </div>
+  <div style="display:flex;gap:14px;padding:22px 28px 28px;overflow-x:auto;align-items:flex-start">
+    <sc-for list="{{ board }}" as="col" hint-placeholder-count="6">
+      <div style="flex:none;width:252px;display:flex;flex-direction:column;gap:10px;opacity:{{ col.op }}">
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:0 2px;gap:8px">
+          <span style="font-size:12px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;line-height:1.2">{{ col.name }}</span>
+          <span style="font-size:12px;font-weight:700;color:var(--gray-500);background:var(--bg-warm);padding:2px 8px;border-radius:999px">{{ col.count }}</span>
+        </div>
+        <div style="height:3px;border-radius:3px;background:{{ col.color }}"></div>
+        <sc-for list="{{ col.deals }}" as="d" hint-placeholder-count="1">
+          <div style="background:var(--white);border:1px solid var(--border);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:10px;box-shadow:var(--shadow-sm)">
+            <div style="display:flex;justify-content:space-between;align-items:center"><span style="display:inline-flex;gap:6px;align-items:center;font-size:12px;font-weight:700;padding:3px 9px;border-radius:999px;background:{{ d.tbg }};color:{{ d.tfg }}"><span style="width:6px;height:6px;border-radius:50%;background:{{ d.tfg }}"></span>{{ d.temp }}</span><span style="font-size:12px;font-weight:{{ d.sw }};color:{{ d.sc }}">{{ d.lastLabel }}</span></div>
+            <div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:15px;font-weight:700;letter-spacing:-0.01em">{{ d.addr }}</span><span style="font-size:13px;color:var(--gray-500)">{{ d.agent }}</span></div>
+            <div style="display:flex;justify-content:space-between;align-items:baseline;border-top:1px solid var(--border);padding-top:10px"><span style="font-size:12px;color:var(--gray-500)">Offer</span><span style="font-size:18px;font-weight:800;letter-spacing:-0.03em">{{ d.offer }}</span></div>
+          </div>
+        </sc-for>
+      </div>
+    </sc-for>
+  </div>
+</div></div>
+
+<div class="dv-opt" id="2b"><div class="dv-olabel"><a class="dv-oid" href="#2b">2b</a>Hot-lead triage list with follow-up queue and bulk actions</div>
+<div class="dv-card" style="width:1280px;display:grid;grid-template-columns:minmax(0,1fr) 340px;background:var(--white);font-family:var(--sans);color:var(--ink)">
+  <div style="padding:26px 28px;border-right:1px solid var(--border);display:flex;flex-direction:column;gap:16px">
+    <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:24px;font-weight:700;letter-spacing:-0.03em">Leads</span>
+      <div style="display:flex;gap:8px;font-size:13px;font-weight:500"><span style="padding:7px 14px;border-radius:999px;background:#fbe6f0;color:var(--magenta);font-weight:700">Hot first</span><span style="padding:7px 14px;border-radius:999px;background:var(--bg-warm);color:var(--gray-700)">Last contact</span><span style="padding:7px 14px;border-radius:999px;background:var(--bg-warm);color:var(--gray-700)">Offer</span></div></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;background:var(--charcoal);color:var(--white);border-radius:12px;padding:10px 14px;font-size:14px"><span style="font-weight:600">3 selected</span><div style="display:flex;gap:8px"><span style="padding:6px 12px;border-radius:8px;background:rgba(255,255,255,.12)">Change stage</span><span style="padding:6px 12px;border-radius:8px;background:rgba(255,255,255,.12)">Set temperature</span><span style="padding:6px 12px;border-radius:8px;background:var(--magenta);font-weight:700">Set follow-up</span></div></div>
+    <div>
+      <div style="display:grid;grid-template-columns:24px 90px minmax(0,1.8fr) minmax(0,1.5fr) 100px 110px;gap:12px;padding:10px 12px;font-size:12px;font-weight:600;color:var(--gray-500);text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--border)"><span></span><span>Lead</span><span>Property / agent</span><span>Stage</span><span>Offer</span><span>Last contact</span></div>
+      <sc-for list="{{ leads }}" as="d" hint-placeholder-count="8">
+        <div style="display:grid;grid-template-columns:24px 90px minmax(0,1.8fr) minmax(0,1.5fr) 100px 110px;gap:12px;align-items:center;padding:13px 12px;border-bottom:1px solid var(--border);background:{{ d.rowbg }}">
+          <span style="width:18px;height:18px;border-radius:5px;border:2px solid var(--gray-300);background:{{ d.chk }}"></span>
+          <span style="display:inline-flex;gap:6px;align-items:center;font-size:12px;font-weight:700;padding:3px 9px;border-radius:999px;background:{{ d.tbg }};color:{{ d.tfg }};width:fit-content"><span style="width:6px;height:6px;border-radius:50%;background:{{ d.tfg }}"></span>{{ d.temp }}</span>
+          <div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:15px;font-weight:700">{{ d.addr }}</span><span style="font-size:13px;color:var(--gray-500)">{{ d.agent }}</span></div>
+          <span style="font-size:14px;color:var(--gray-700)">{{ d.stage }}</span>
+          <span style="font-size:15px;font-weight:800;letter-spacing:-0.02em">{{ d.offer }}</span>
+          <span style="font-size:13px;font-weight:{{ d.sw }};color:{{ d.sc }}">{{ d.lastLabel }}</span>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+  <div style="padding:26px 24px;background:var(--bg);display:flex;flex-direction:column;gap:14px">
+    <span style="font-size:18px;font-weight:700;letter-spacing:-0.02em">Follow-up queue</span>
+    <sc-for list="{{ queue }}" as="q" hint-placeholder-count="5">
+      <div style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:6px">
+        <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:12px;font-weight:700;color:{{ q.color }}">{{ q.when }}</span><span style="font-size:12px;color:var(--gray-500)">{{ q.how }}</span></div>
+        <span style="font-size:15px;font-weight:700">{{ q.addr }}</span><span style="font-size:13px;color:var(--gray-700);line-height:1.4">{{ q.note }}</span>
+      </div>
+    </sc-for>
+  </div>
+</div></div>
+
+<div class="dv-opt" id="2c"><div class="dv-olabel"><a class="dv-oid" href="#2c">2c</a>Deal detail with notes feed and agent info</div>
+<div class="dv-card" style="width:1280px;background:var(--bg);font-family:var(--sans);color:var(--ink)">
+  <div style="background:var(--white);padding:24px 28px 20px;border-bottom:1px solid var(--border);display:flex;flex-direction:column;gap:18px">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start">
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div style="display:flex;gap:8px;align-items:center"><span style="display:inline-flex;gap:6px;align-items:center;font-size:12px;font-weight:700;padding:4px 10px;border-radius:999px;background:#fbe6f0;color:var(--magenta)"><span style="width:6px;height:6px;border-radius:50%;background:var(--magenta)"></span>Hot</span><x-import component-from-global-scope="ZoodealioWebpageDesignSystem_c11f2e.Badge" variant="warning" hint-size="110px,24px">Contacted 8 days ago</x-import></div>
+        <span style="font-size:32px;font-weight:700;letter-spacing:-0.03em;line-height:1.1">218 Cedar Ave</span>
+        <span style="display:flex;gap:6px;align-items:center;font-size:14px;color:var(--gray-500)"><x-import component-from-global-scope="ZoodealioWebpageDesignSystem_c11f2e.Icon" name="map-pin" size="16" hint-size="16px,16px"></x-import>Dallas, TX 75208</span>
+      </div>
+      <div style="display:flex;gap:10px"><x-import component-from-global-scope="ZoodealioWebpageDesignSystem_c11f2e.Button" variant="outline" size="sm" hint-size="auto,38px">Set follow-up</x-import><x-import component-from-global-scope="ZoodealioWebpageDesignSystem_c11f2e.Button" variant="primary" size="sm" hint-size="auto,38px">Log contact</x-import></div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:4px">
+      <sc-for list="{{ stepper }}" as="s" hint-placeholder-count="12">
+        <div style="display:flex;flex-direction:column;gap:6px"><div style="height:6px;border-radius:3px;background:{{ s.bg }}"></div><span style="font-size:11px;line-height:1.2;color:{{ s.fg }};font-weight:{{ s.w }}">{{ s.name }}</span></div>
+      </sc-for>
+    </div>
+  </div>
+  <div style="display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:20px;padding:24px 28px 28px;align-items:start">
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <div style="background:var(--white);border:1px solid var(--border);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:12px">
+        <span style="font-size:15px;color:var(--gray-400)">Add a note about this deal</span>
+        <div style="display:flex;justify-content:space-between;align-items:center"><div style="display:flex;gap:6px;font-size:13px;font-weight:500"><span style="padding:6px 12px;border-radius:999px;background:var(--ink);color:var(--white)">Call</span><span style="padding:6px 12px;border-radius:999px;background:var(--bg-warm);color:var(--gray-700)">Text</span><span style="padding:6px 12px;border-radius:999px;background:var(--bg-warm);color:var(--gray-700)">Email</span><span style="padding:6px 12px;border-radius:999px;background:var(--bg-warm);color:var(--gray-700)">Voicemail</span></div><x-import component-from-global-scope="ZoodealioWebpageDesignSystem_c11f2e.Button" variant="primary" size="xs" hint-size="auto,32px">Save note</x-import></div>
+      </div>
+      <sc-for list="{{ feed }}" as="n" hint-placeholder-count="5">
+        <div style="background:var(--white);border:1px solid var(--border);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:8px">
+          <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:12px;font-weight:700;padding:3px 10px;border-radius:999px;background:var(--bg-warm);color:var(--gray-700)">{{ n.type }}</span><span style="font-size:12px;color:var(--gray-500)">{{ n.when }}</span></div>
+          <span style="font-size:15px;line-height:1.5">{{ n.text }}</span>
+        </div>
+      </sc-for>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <div style="background:var(--magenta);color:var(--white);border-radius:16px;padding:20px;display:flex;flex-direction:column;gap:4px"><span style="font-size:13px;opacity:.9">Current offer</span><span style="font-size:40px;font-weight:800;letter-spacing:-0.04em">$398,000</span><span style="font-size:13px">Agent countered at $421,000</span></div>
+      <div style="background:var(--white);border:1px solid var(--border);border-radius:14px;padding:18px;display:flex;flex-direction:column;gap:12px">
+        <span style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.04em">Agent</span>
+        <div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:18px;font-weight:700">Sandra Whitfield</span><span style="font-size:14px;color:var(--gray-500)">Lakeview Realty</span></div>
+        <div style="display:flex;flex-direction:column;gap:6px;font-size:14px;color:var(--gray-700)"><span>(214) 555-0187</span><span>s.whitfield@lakeviewrealty.com</span></div>
+        <a href="#2c" style="font-size:14px;font-weight:700">View all 4 deals with Sandra</a>
+      </div>
+      <div style="background:var(--white);border:1px solid var(--border);border-radius:14px;padding:18px;display:flex;flex-direction:column;gap:6px"><span style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.04em">Next follow-up</span><span style="font-size:20px;font-weight:800;letter-spacing:-0.02em;color:var(--magenta)">Overdue by 1 day</span><span style="font-size:14px;color:var(--gray-500)">Call Sandra about the counter</span></div>
+    </div>
+  </div>
+</div></div>
+
+<div class="dv-opt" id="2d"><div class="dv-olabel"><a class="dv-oid" href="#2d">2d</a>Dashboard: overdue, today, stale</div>
+<div class="dv-card" style="width:1280px;background:var(--charcoal);color:var(--white);font-family:var(--sans);padding:32px;display:flex;flex-direction:column;gap:24px;border-color:var(--charcoal-2)">
+  <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:32px;font-weight:700;letter-spacing:-0.03em">Tuesday, October 20</span><x-import component-from-global-scope="ZoodealioWebpageDesignSystem_c11f2e.Button" variant="primary" size="sm" hint-size="auto,38px">+ Add deal</x-import></div>
+  <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px">
+    <sc-for list="{{ tiles }}" as="s" hint-placeholder-count="4">
+      <div style="background:{{ s.bg }};border:1px solid var(--charcoal-2);border-radius:16px;padding:20px;display:flex;flex-direction:column;gap:6px"><span style="font-size:13px;color:{{ s.sub }}">{{ s.label }}</span><span style="font-size:36px;font-weight:800;letter-spacing:-0.04em">{{ s.value }}</span><span style="font-size:13px;color:{{ s.sub }}">{{ s.note }}</span></div>
+    </sc-for>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;align-items:start">
+    <sc-for list="{{ lists }}" as="L" hint-placeholder-count="3">
+      <div style="background:var(--charcoal-2);border-radius:16px;padding:22px;display:flex;flex-direction:column;gap:4px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><span style="font-size:18px;font-weight:700">{{ L.title }}</span><span style="font-size:13px;font-weight:700;color:{{ L.color }}">{{ L.count }}</span></div>
+        <sc-for list="{{ L.items }}" as="i" hint-placeholder-count="4">
+          <div style="display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;padding:12px 0;border-top:1px solid rgba(255,255,255,.08)"><div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:15px;font-weight:600">{{ i.addr }}</span><span style="font-size:13px;color:var(--gray-400)">{{ i.sub }}</span></div><span style="font-size:12px;font-weight:700;color:{{ L.color }}">{{ i.tag }}</span></div>
+        </sc-for>
+      </div>
+    </sc-for>
+  </div>
+</div></div>
+
+</div>
+<p class="dv-next">Try next: "combine <a class="dv-oid" href="#2a">2a</a> and <a class="dv-oid" href="#2b">2b</a> with a board/list toggle" · "build the agent profile page" · "show <a class="dv-oid" href="#2c">2c</a> with a collapsible notes timeline"</p>
+</section>
+<section class="dv-turn" id="t1">
+<div class="dv-thd"><a class="dv-tid" href="#t1">1</a><span class="dv-tname">Deal CRM, three layouts (sample real-estate data)</span></div>
+<div class="dv-opts">
+
+<div class="dv-opt" id="1a"><div class="dv-olabel"><a class="dv-oid" href="#1a">1a</a>Kanban pipeline</div>
+<div class="dv-card" style="width:1280px;background:var(--bg);font-family:var(--sans);color:var(--ink)">
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:22px 28px;background:var(--white);border-bottom:1px solid var(--border)">
+    <div style="display:flex;align-items:baseline;gap:16px"><span style="font-size:24px;font-weight:700;letter-spacing:-0.03em">Pipeline</span><span style="font-size:14px;color:var(--gray-500)">12 active deals · $4.82M</span></div>
+    <div style="display:flex;gap:10px;align-items:center">
+      <div style="display:flex;gap:6px;background:var(--bg-warm);padding:4px;border-radius:10px;font-size:13px;font-weight:500"><span style="padding:6px 12px;background:var(--white);border-radius:7px;box-shadow:var(--shadow-sm)">All</span><span style="padding:6px 12px;color:var(--gray-500)">Buying</span><span style="padding:6px 12px;color:var(--gray-500)">Selling</span></div>
+      <x-import component-from-global-scope="ZoodealioWebpageDesignSystem_c11f2e.Button" variant="primary" size="sm" hint-size="auto,38px">+ New deal</x-import>
+    </div>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:16px;padding:24px 28px 28px;align-items:start">
+    <sc-for list="{{ columns }}" as="col" hint-placeholder-count="5">
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;padding:0 4px">
+          <span style="font-size:13px;font-weight:700;letter-spacing:.02em;text-transform:uppercase">{{ col.name }}</span>
+          <span style="font-size:13px;color:var(--gray-500);font-weight:500">{{ col.total }}</span>
+        </div>
+        <div style="height:3px;border-radius:3px;background:{{ col.color }}"></div>
+        <sc-for list="{{ col.deals }}" as="d" hint-placeholder-count="2">
+          <div style="background:var(--white);border:1px solid var(--border);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:10px;box-shadow:var(--shadow-sm)">
+            <div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:15px;font-weight:700;letter-spacing:-0.01em">{{ d.addr }}</span><span style="font-size:13px;color:var(--gray-500)">{{ d.client }}</span></div>
+            <div style="font-size:20px;font-weight:800;letter-spacing:-0.03em">{{ d.value }}</div>
+            <div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--gray-700);border-top:1px solid var(--border);padding-top:10px"><span>{{ d.next }}</span><span style="font-weight:700;color:{{ d.dueColor }}">{{ d.due }}</span></div>
+          </div>
+        </sc-for>
+      </div>
+    </sc-for>
+  </div>
+</div></div>
+
+<div class="dv-opt" id="1b"><div class="dv-olabel"><a class="dv-oid" href="#1b">1b</a>Table with deal detail panel</div>
+<div class="dv-card" style="width:1280px;display:grid;grid-template-columns:minmax(0,1fr) 400px;background:var(--white);font-family:var(--sans);color:var(--ink)">
+  <div style="padding:26px 28px;border-right:1px solid var(--border)">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+      <span style="font-size:24px;font-weight:700;letter-spacing:-0.03em">Deals</span>
+      <div style="display:flex;gap:10px;align-items:center"><div style="border:1px solid var(--border);border-radius:10px;padding:9px 14px;font-size:14px;color:var(--gray-400);width:220px">Search address or client</div>
+      <x-import component-from-global-scope="ZoodealioWebpageDesignSystem_c11f2e.Button" variant="primary" size="sm" hint-size="auto,38px">+ New deal</x-import></div>
+    </div>
+    <div style="display:flex;gap:8px;margin-bottom:16px;font-size:13px;font-weight:500">
+      <span style="padding:7px 14px;border-radius:999px;background:var(--ink);color:var(--white)">All 12</span><span style="padding:7px 14px;border-radius:999px;background:var(--bg-warm);color:var(--gray-700)">Following 5</span><span style="padding:7px 14px;border-radius:999px;background:var(--bg-warm);color:var(--gray-700)">Needs action 3</span><span style="padding:7px 14px;border-radius:999px;background:var(--bg-warm);color:var(--gray-700)">Closing soon 2</span>
+    </div>
+    <div style="display:grid;grid-template-columns:minmax(0,2.2fr) 1.3fr 1fr 1fr 1.6fr;gap:12px;padding:10px 12px;font-size:12px;font-weight:600;color:var(--gray-500);text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--border)"><span>Property</span><span>Stage</span><span>Value</span><span>Close</span><span>Next step</span></div>
+    <sc-for list="{{ rows }}" as="r" hint-placeholder-count="8">
+      <div style="display:grid;grid-template-columns:minmax(0,2.2fr) 1.3fr 1fr 1fr 1.6fr;gap:12px;align-items:center;padding:14px 12px;border-bottom:1px solid var(--border);background:{{ r.bg }};border-radius:{{ r.radius }}">
+        <div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:15px;font-weight:700">{{ r.addr }}</span><span style="font-size:13px;color:var(--gray-500)">{{ r.client }}</span></div>
+        <div><x-import component-from-global-scope="ZoodealioWebpageDesignSystem_c11f2e.Badge" variant="{{ r.variant }}" dot="{{ true }}" hint-size="90px,24px">{{ r.stage }}</x-import></div>
+        <span style="font-size:15px;font-weight:800;letter-spacing:-0.02em">{{ r.value }}</span>
+        <span style="font-size:14px;color:var(--gray-700)">{{ r.close }}</span>
+        <span style="font-size:13px;color:var(--gray-700)">{{ r.next }}</span>
+      </div>
+    </sc-for>
+  </div>
+  <div style="padding:28px;display:flex;flex-direction:column;gap:22px;background:var(--bg)">
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <x-import component-from-global-scope="ZoodealioWebpageDesignSystem_c11f2e.Badge" variant="soft" hint-size="110px,24px">Under contract</x-import>
+      <span style="font-size:28px;font-weight:700;letter-spacing:-0.03em;line-height:1.1">1428 Alder Court</span>
+      <span style="display:flex;gap:6px;align-items:center;font-size:14px;color:var(--gray-500)"><x-import component-from-global-scope="ZoodealioWebpageDesignSystem_c11f2e.Icon" name="map-pin" size="16" hint-size="16px,16px"></x-import>Austin, TX 78704</span>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:14px"><div style="font-size:12px;color:var(--gray-500)">Purchase price</div><div style="font-size:22px;font-weight:800;letter-spacing:-0.03em">$485,000</div></div>
+      <div style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:14px"><div style="font-size:12px;color:var(--gray-500)">Closing</div><div style="font-size:22px;font-weight:800;letter-spacing:-0.03em">Nov 14</div></div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <span style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.04em">Activity</span>
+      <sc-for list="{{ activity }}" as="a" hint-placeholder-count="4">
+        <div style="display:grid;grid-template-columns:10px minmax(0,1fr) auto;gap:12px;align-items:start;font-size:14px"><span style="width:10px;height:10px;border-radius:50%;background:{{ a.color }};margin-top:5px"></span><span style="line-height:1.4">{{ a.text }}</span><span style="font-size:12px;color:var(--gray-500)">{{ a.when }}</span></div>
+      </sc-for>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:auto">
+      <x-import component-from-global-scope="ZoodealioWebpageDesignSystem_c11f2e.Button" variant="primary" size="sm" hint-size="auto,38px">Log update</x-import>
+      <x-import component-from-global-scope="ZoodealioWebpageDesignSystem_c11f2e.Button" variant="outline" size="sm" hint-size="auto,38px">Message client</x-import>
+    </div>
+  </div>
+</div></div>
+
+<div class="dv-opt" id="1c"><div class="dv-olabel"><a class="dv-oid" href="#1c">1c</a>Dark dashboard with forecast</div>
+<div class="dv-card" style="width:1280px;background:var(--charcoal);color:var(--white);font-family:var(--sans);padding:32px;display:flex;flex-direction:column;gap:24px;border-color:var(--charcoal-2)">
+  <div style="display:flex;justify-content:space-between;align-items:center">
+    <div style="display:flex;flex-direction:column;gap:4px"><span style="font-size:14px;color:var(--gray-400)">Tuesday, October 20</span><span style="font-size:32px;font-weight:700;letter-spacing:-0.03em">Good morning. 3 deals need you today.</span></div>
+    <x-import component-from-global-scope="ZoodealioWebpageDesignSystem_c11f2e.Button" variant="primary" size="sm" hint-size="auto,38px">+ New deal</x-import>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px">
+    <sc-for list="{{ stats }}" as="s" hint-placeholder-count="4">
+      <div style="background:{{ s.bg }};border:1px solid var(--charcoal-2);border-radius:16px;padding:20px;display:flex;flex-direction:column;gap:6px"><span style="font-size:13px;color:{{ s.sub }}">{{ s.label }}</span><span style="font-size:36px;font-weight:800;letter-spacing:-0.04em">{{ s.value }}</span><span style="font-size:13px;color:{{ s.sub }}">{{ s.note }}</span></div>
+    </sc-for>
+  </div>
+  <div style="display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:16px">
+    <div style="background:var(--charcoal-2);border-radius:16px;padding:24px;display:flex;flex-direction:column;gap:16px">
+      <span style="font-size:18px;font-weight:700">Pipeline by stage</span>
+      <sc-for list="{{ funnel }}" as="f" hint-placeholder-count="5">
+        <div style="display:grid;grid-template-columns:120px minmax(0,1fr) 70px;gap:14px;align-items:center;font-size:14px"><span style="color:var(--gray-300)">{{ f.name }}</span><div style="height:28px;background:rgba(255,255,255,.06);border-radius:8px"><div style="height:100%;width:{{ f.w }};background:{{ f.color }};border-radius:8px"></div></div><span style="font-weight:700;text-align:right">{{ f.value }}</span></div>
+      </sc-for>
+    </div>
+    <div style="background:var(--charcoal-2);border-radius:16px;padding:24px;display:flex;flex-direction:column;gap:14px">
+      <span style="font-size:18px;font-weight:700">Today</span>
+      <sc-for list="{{ tasks }}" as="t" hint-placeholder-count="4">
+        <div style="display:grid;grid-template-columns:22px minmax(0,1fr) auto;gap:12px;align-items:center;padding:12px 0;border-top:1px solid rgba(255,255,255,.08)"><span style="width:20px;height:20px;border-radius:6px;border:2px solid var(--gray-500)"></span><div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:15px;font-weight:600">{{ t.title }}</span><span style="font-size:13px;color:var(--gray-400)">{{ t.deal }}</span></div><span style="font-size:12px;font-weight:700;color:{{ t.color }}">{{ t.when }}</span></div>
+      </sc-for>
+    </div>
+  </div>
+</div></div>
+
+</div>
+<p class="dv-next">Try next: "merge <a class="dv-oid" href="#1a">1a</a> with the detail panel from <a class="dv-oid" href="#1b">1b</a>" · "make <a class="dv-oid" href="#1c">1c</a> light" · "add a mobile version of <a class="dv-oid" href="#1a">1a</a>"</p>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    const M = '#ac0a55', G = '#10b981', A = '#f59e0b', K = '#a1a1aa';
+    const cols = [
+      ['Lead', K, [['1428 Alder Ct', 'M. Rivera', '$485,000', 'Call back', 'Today', M], ['77 Bishop St', 'Chen Holdings', '$312,000', 'Send comps', 'Oct 23', '#71717a']]],
+      ['Contacted', '#71717a', [['930 Larkspur Ln', 'D. Okafor', '$640,000', 'Site visit', 'Oct 22', A], ['12 Mill Rd', 'Patel Family', '$275,000', 'Await reply', 'Oct 25', '#71717a'], ['4410 Ridge Dr', 'J. Alvarez', '$520,000', 'Intro email', 'Oct 26', '#71717a']]],
+      ['Offer out', A, [['218 Cedar Ave', 'S. Whitfield', '$398,000', 'Counter due', 'Today', M], ['65 Harbor Way', 'Kline Group', '$910,000', 'Review terms', 'Oct 24', A]]],
+      ['Under contract', M, [['1428 Alder Court', 'M. Rivera', '$485,000', 'Inspection', 'Oct 28', '#71717a'], ['802 Pine Hollow', 'T. Brooks', '$455,000', 'Appraisal', 'Nov 02', '#71717a']]],
+      ['Closed', G, [['36 Sutter Pl', 'R. Nguyen', '$362,000', 'Funded', 'Oct 15', G]]]
+    ];
+    const columns = cols.map(([name, color, ds]) => ({
+      name, color,
+      total: '$' + (ds.reduce((s, d) => s + parseInt(d[2].replace(/\D/g, '')), 0) / 1000).toLocaleString() + 'K',
+      deals: ds.map(d => ({ addr: d[0], client: d[1], value: d[2], next: d[3], due: d[4], dueColor: d[5] }))
+    }));
+    const st = { Lead: 'neutral', Contacted: 'neutral', 'Offer out': 'warning', 'Under contract': 'soft', Closed: 'success' };
+    const rr = [
+      ['1428 Alder Court', 'M. Rivera', 'Under contract', '$485,000', 'Nov 14', 'Inspection Oct 28'],
+      ['218 Cedar Ave', 'S. Whitfield', 'Offer out', '$398,000', 'Dec 02', 'Counter due today'],
+      ['802 Pine Hollow', 'T. Brooks', 'Under contract', '$455,000', 'Nov 20', 'Appraisal Nov 02'],
+      ['65 Harbor Way', 'Kline Group', 'Offer out', '$910,000', 'Dec 15', 'Review terms'],
+      ['930 Larkspur Ln', 'D. Okafor', 'Contacted', '$640,000', 'TBD', 'Site visit Oct 22'],
+      ['77 Bishop St', 'Chen Holdings', 'Lead', '$312,000', 'TBD', 'Send comps'],
+      ['12 Mill Rd', 'Patel Family', 'Contacted', '$275,000', 'TBD', 'Await reply'],
+      ['36 Sutter Pl', 'R. Nguyen', 'Closed', '$362,000', 'Oct 15', 'Funded']
+    ].map((r, i) => ({ addr: r[0], client: r[1], stage: r[2], variant: st[r[2]], value: r[3], close: r[4], next: r[5], bg: i === 0 ? '#fbe6f0' : 'transparent', radius: i === 0 ? '10px' : '0' }));
+    const activity = [
+      ['Inspection scheduled with Brightline', 'Today', M], ['Earnest money received', 'Oct 17', G],
+      ['Offer accepted at $485,000', 'Oct 14', G], ['Counter sent, seller asked for 10-day close', 'Oct 12', A]
+    ].map(a => ({ text: a[0], when: a[1], color: a[2] }));
+    const stats = [
+      ['Open pipeline', '$4.82M', '12 deals', '#242328', K], ['Under contract', '$940K', '2 deals', '#242328', K],
+      ['Closing this month', '$847K', '2 deals', M, '#fbe6f0'], ['Closed YTD', '$3.1M', '9 deals', '#242328', K]
+    ].map(s => ({ label: s[0], value: s[1], note: s[2], bg: s[3], sub: s[4] }));
+    const funnel = [['Lead', '797K', '34%', K], ['Contacted', '1.44M', '62%', '#71717a'], ['Offer out', '1.31M', '56%', A], ['Under contract', '940K', '40%', '#e11d74'], ['Closed', '362K', '16%', G]]
+      .map(f => ({ name: f[0], value: '$' + f[1], w: f[2], color: f[3] }));
+    const tasks = [
+      ['Respond to counter', '218 Cedar Ave', 'Today', '#e11d74'], ['Call M. Rivera back', '1428 Alder Ct', 'Today', '#e11d74'],
+      ['Book site visit', '930 Larkspur Ln', 'Oct 22', A], ['Review terms with Kline', '65 Harbor Way', 'Oct 24', K]
+    ].map(t => ({ title: t[0], deal: t[1], when: t[2], color: t[3] }));
+    const TS = { Hot: ['#fbe6f0', M], Warm: ['#fff4e5', '#b45309'], Cold: ['#e6f0fe', '#1d4ed8'] };
+    const SN = ['Comping complete', 'Comping viewed', 'Agent disputed comps', 'Details requested', 'Offer ready', 'Details shared', 'Agent countered', 'Offer selected', 'Under contract', 'Inspection period', 'Closed', 'Lost / dead'];
+    const SC = [K, K, '#f59e0b', '#71717a', '#3b82f6', '#3b82f6', '#f59e0b', '#e11d74', M, '#8e0746', G, '#3f3f46'];
+    const D = [
+      ['218 Cedar Ave', 'Sandra Whitfield', 6, '$398,000', 'Hot', 8], ['1428 Alder Ct', 'Marco Rivera', 8, '$485,000', 'Hot', 2],
+      ['65 Harbor Way', 'Kline Realty Group', 4, '$910,000', 'Hot', 1], ['930 Larkspur Ln', 'Dana Okafor', 3, '$640,000', 'Warm', 3],
+      ['77 Bishop St', 'Lee Chen', 1, '$312,000', 'Warm', 9], ['12 Mill Rd', 'Priya Patel', 2, '$275,000', 'Cold', 12],
+      ['4410 Ridge Dr', 'Joe Alvarez', 0, '$520,000', 'Cold', 0], ['802 Pine Hollow', 'Tia Brooks', 9, '$455,000', 'Warm', 4],
+      ['36 Sutter Pl', 'Ruth Nguyen', 10, '$362,000', 'Warm', 6], ['19 Oak Lane', 'Bill Hart', 11, '$330,000', 'Cold', 21]
+    ].map((d, i) => {
+      const stale = d[5] >= 7 && d[2] < 10, t = TS[d[4]];
+      return { addr: d[0], agent: d[1], si: d[2], stage: SN[d[2]], offer: d[3], temp: d[4], tbg: t[0], tfg: t[1], days: d[5],
+        lastLabel: d[5] === 0 ? 'Today' : stale ? d[5] + 'd, stale' : d[5] + 'd ago', sc: stale ? '#b45309' : '#71717a', sw: stale ? 700 : 500,
+        rowbg: i < 3 ? '#fdf4f8' : 'transparent', chk: i < 3 ? M : 'transparent' };
+    });
+    const board = SN.map((name, i) => {
+      const ds = D.filter(d => d.si === i);
+      return { name, color: SC[i], count: ds.length, deals: ds, op: i === 11 ? 0.6 : 1 };
+    });
+    const ord = { Hot: 0, Warm: 1, Cold: 2 };
+    const leads = D.filter(d => d.si < 10).sort((a, b) => ord[a.temp] - ord[b.temp] || b.days - a.days).slice(0, 8);
+    const queue = [
+      ['Overdue 1 day', 'Call Sandra about the counter', '218 Cedar Ave', 'Call', '#e11d74'], ['Today', 'Send inspection access to Marco', '1428 Alder Ct', 'Email', M],
+      ['Today', 'Check if Kline reviewed details', '65 Harbor Way', 'Text', M], ['Tomorrow', 'Ask Dana for seller timeline', '930 Larkspur Ln', 'Call', '#b45309'],
+      ['Oct 24', 'Re-engage Lee on comps', '77 Bishop St', 'Voicemail', '#71717a']
+    ].map(q => ({ when: q[0], note: q[1], addr: q[2], how: q[3], color: q[4] }));
+    const stepper = SN.map((name, i) => ({ name, bg: i <= 6 ? (i === 6 ? M : '#e8a3c2') : '#e4e4e7', fg: i === 6 ? '#09090b' : '#71717a', w: i === 6 ? 700 : 500 }));
+    const feed = [
+      ['Call', 'Today', 'Sandra says seller wants $421K and a 10-day close. Told her I would review and call back tomorrow.'],
+      ['Email', 'Oct 12', 'Sent offer details and proof of funds.'],
+      ['Voicemail', 'Oct 10', 'Left a message asking about the disputed comps.'],
+      ['Text', 'Oct 8', 'Agent said the seller disagrees with the 14 Maple comp.'],
+      ['Call', 'Oct 6', 'First call. Seller is motivated and wants to move before the holidays.']
+    ].map(n => ({ type: n[0], when: n[1], text: n[2] }));
+    const tiles = [
+      ['Hot leads', '3', '$1.79M in offers', M, '#fbe6f0'], ['Overdue follow-ups', '2', 'Oldest: 1 day', '#242328', K],
+      ['Stale, 7+ days', '3', 'No contact in a week', '#242328', K], ['Under contract', '2', '$940K', '#242328', K]
+    ].map(s => ({ label: s[0], value: s[1], note: s[2], bg: s[3], sub: s[4] }));
+    const lists = [
+      { title: 'Overdue', count: '2', color: '#e11d74', items: [{ addr: '218 Cedar Ave', sub: 'Call Sandra about the counter', tag: '1d late' }, { addr: '77 Bishop St', sub: 'Re-engage Lee on comps', tag: '1d late' }] },
+      { title: 'Today', count: '3', color: '#f59e0b', items: [{ addr: '1428 Alder Ct', sub: 'Send inspection access', tag: 'Email' }, { addr: '65 Harbor Way', sub: 'Check if details reviewed', tag: 'Text' }, { addr: '802 Pine Hollow', sub: 'Confirm appraisal date', tag: 'Call' }] },
+      { title: 'Stale, 7+ days', count: '3', color: K, items: [{ addr: '218 Cedar Ave', sub: 'Hot, agent countered', tag: '8d' }, { addr: '77 Bishop St', sub: 'Warm, details requested', tag: '9d' }, { addr: '12 Mill Rd', sub: 'Cold, comping viewed', tag: '12d' }] }
+    ];
+    return { columns, rows: rr, activity, stats, funnel, tasks, board, leads, queue, stepper, feed, tiles, lists };
+  }
+}
+</script>
+</body>
+</html>
