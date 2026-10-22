@@ -45,6 +45,7 @@ export const deals = crm.table('deals', {
   lastContactAt: timestamp('last_contact_at', { withTimezone: true }).notNull().defaultNow(),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  dealiodeskTransactionId: text('dealiodesk_transaction_id').unique(),
 })
 
 export const notes = crm.table('notes', {
