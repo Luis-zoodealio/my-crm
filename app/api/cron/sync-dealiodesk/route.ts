@@ -1,4 +1,3 @@
-import Anthropic from '@anthropic-ai/sdk'
 import { and, eq, sql } from 'drizzle-orm'
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
@@ -7,17 +6,70 @@ import { agents, deals, userSettings } from '@/lib/db/schema'
 export const dynamic = 'force-dynamic'
 export const maxDuration = 60
 
+// DealioDesk user whose round-robin assignments feed this CRM.
 const DEALIO_ASSIGNED_USER_ID = 'b91ed836-75d4-480d-8cb9-28c6555d67fe'
+// Only deals that have reached this offers lane enter the CRM (stage 0).
+const COMPING_COMPLETE_LANE = 'comping-complete'
 
-interface SyncedDeal {
-  transactionId: string
+// The shape DealioDesk's property search returns (only the fields we use).
+interface DealioProperty {
+  propertyTransactionId: string
   address: string
-  city: string | null
-  state: string | null
-  agentName: string | null
-  agentPhone: string | null
-  cashOffer: number | null
-  cashPlusOffer: number | null
+  deals?: { offersLaneCode?: string }[]
+  agentName?: string | null
+  agentPhone?: string | null
+  offerExpirySummary?: {
+    expiringOffers?: { type: number; amount: number }[]
+  }
+}
+
+// "123 Main St, Ocala, FL" -> { address, city, state }. Leaves city/state null
+// when the format is unexpected rather than guessing.
+function splitAddress(full: string): { address: string; city: string | null; state: string | null } {
+  const parts = full.split(',').map((p) => p.trim())
+  if (parts.length >= 3) {
+    return { address: parts.slice(0, -2).join(', '), city: parts[parts.length - 2], state: parts[parts.length - 1] || null }
+  }
+  return { address: full, city: null, state: null }
+}
+
+async function fetchCompingCompleteProperties(): Promise<DealioProperty[]> {
+  const base = process.env.DEALIO_API_URL
+  const token = process.env.DEALIO_API_TOKEN
+  if (!base || !token) {
+    throw new Error('DEALIO_API_URL and DEALIO_API_TOKEN must be set in environment variables.')
+  }
+
+  const matches: DealioProperty[] = []
+  let page = 1
+  // Paginate through the user's OffersReady properties — comping-complete lives
+  // in that phase — and keep only the ones in the comping-complete lane.
+  for (;;) {
+    const url = new URL('/api/transactions/properties/search', base)
+    url.searchParams.set('assignedToUserId', DEALIO_ASSIGNED_USER_ID)
+    url.searchParams.append('phases', 'OffersReady')
+    url.searchParams.set('includeDeals', 'true')
+    url.searchParams.set('pageSize', '100')
+    url.searchParams.set('pageNumber', String(page))
+
+    const res = await fetch(url, {
+      headers: { authorization: `Bearer ${token}`, accept: 'application/json' },
+    })
+    if (!res.ok) {
+      throw new Error(`DealioDesk responded ${res.status}: ${await res.text()}`)
+    }
+    const body = (await res.json()) as { items?: DealioProperty[]; totalCount?: number; page?: number; pageSize?: number }
+    const items = body.items ?? []
+    for (const p of items) {
+      if (p.deals?.[0]?.offersLaneCode === COMPING_COMPLETE_LANE) matches.push(p)
+    }
+
+    const pageSize = body.pageSize ?? 100
+    const total = body.totalCount ?? items.length
+    if (page * pageSize >= total || items.length === 0) break
+    page++
+  }
+  return matches
 }
 
 export async function GET(req: Request) {
@@ -26,72 +78,19 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  if (!process.env.DEALIO_MCP_URL || !process.env.DEALIO_MCP_TOKEN) {
-    return NextResponse.json(
-      { error: 'DEALIO_MCP_URL and DEALIO_MCP_TOKEN must be set in environment variables.' },
-      { status: 500 }
-    )
-  }
-
-  // Resolve the CRM owner — whoever has logged in first.
+  // Resolve the CRM owner — whoever has logged in (and so has settings) first.
   const [userRow] = await db.select({ userId: userSettings.userId }).from(userSettings).limit(1)
   if (!userRow) {
-    return NextResponse.json(
-      { error: 'No CRM user found. Log in to the app at least once first.' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'No CRM user found. Log in to the app at least once first.' }, { status: 500 })
   }
   const userId = userRow.userId
 
-  // Fetch Comping Complete deals from DealioDesk via the Anthropic MCP client.
-  const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
-
-  const mcpResponse = await (anthropic.beta.messages as any).create(
-    {
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: 8192,
-      system:
-        'You are a JSON extraction tool. Call the DealioDesk MCP tool exactly as instructed and return ONLY a JSON array — no markdown, no code blocks, no explanation.',
-      messages: [
-        {
-          role: 'user',
-          content: `Call read_operation with operation_id "Transactions.SearchProperties" and params:
-{"phases":["OffersReady"],"assignedToUserId":"${DEALIO_ASSIGNED_USER_ID}","pageSize":100,"includeDeals":true}
-
-Return ONLY items where deals[0].offersLaneCode === "comping-complete".
-
-Output this exact JSON array (empty array if none match):
-[{"transactionId":"<propertyTransactionId>","address":"<street address only>","city":"<city>","state":"<2-letter state>","agentName":"<agentName or null>","agentPhone":"<agentPhone or null>","cashOffer":<expiringOffers type=1 amount or null>,"cashPlusOffer":<expiringOffers type=0 amount or null>}]
-
-The DealioDesk address field is "Street, City, STATE" — split it accordingly.`,
-        },
-      ],
-      mcp_servers: [
-        {
-          type: 'url',
-          url: process.env.DEALIO_MCP_URL,
-          authorization_token: process.env.DEALIO_MCP_TOKEN,
-        },
-      ],
-    },
-    { headers: { 'anthropic-beta': 'mcp-client-2025-04-04' } }
-  )
-
-  const raw = (mcpResponse.content as any[])
-    .filter((c: any) => c.type === 'text')
-    .map((c: any) => c.text as string)
-    .join('')
-    .replace(/```json\n?/g, '')
-    .replace(/```\n?/g, '')
-    .trim()
-
-  let properties: SyncedDeal[]
+  let properties: DealioProperty[]
   try {
-    properties = JSON.parse(raw)
-    if (!Array.isArray(properties)) throw new Error('not an array')
-  } catch {
-    console.error('[sync-dealiodesk] Failed to parse response:', raw)
-    return NextResponse.json({ error: 'Unexpected response format from DealioDesk', raw }, { status: 500 })
+    properties = await fetchCompingCompleteProperties()
+  } catch (e) {
+    console.error('[sync-dealiodesk]', e)
+    return NextResponse.json({ error: e instanceof Error ? e.message : 'DealioDesk fetch failed' }, { status: 502 })
   }
 
   let added = 0
@@ -102,8 +101,7 @@ The DealioDesk address field is "Street, City, STATE" — split it accordingly.`
     const [existing] = await db
       .select({ id: deals.id })
       .from(deals)
-      .where(eq(deals.dealiodeskTransactionId, prop.transactionId))
-
+      .where(eq(deals.dealiodeskTransactionId, prop.propertyTransactionId))
     if (existing) {
       skipped++
       continue
@@ -115,13 +113,7 @@ The DealioDesk address field is "Street, City, STATE" — split it accordingly.`
       const [existingAgent] = await db
         .select({ id: agents.id })
         .from(agents)
-        .where(
-          and(
-            eq(agents.userId, userId),
-            sql`lower(${agents.name}) = lower(${prop.agentName})`
-          )
-        )
-
+        .where(and(eq(agents.userId, userId), sql`lower(${agents.name}) = lower(${prop.agentName})`))
       if (existingAgent) {
         agentId = existingAgent.id
       } else {
@@ -133,19 +125,24 @@ The DealioDesk address field is "Street, City, STATE" — split it accordingly.`
       }
     }
 
+    // Offers: type 1 is the cash offer, type 0 the cash-plus offer.
+    const offers = prop.offerExpirySummary?.expiringOffers ?? []
+    const cashOffer = offers.find((o) => o.type === 1)?.amount ?? null
+    const cashPlusOffer = offers.find((o) => o.type === 0)?.amount ?? null
+    const { address, city, state } = splitAddress(prop.address)
+
     await db.insert(deals).values({
       userId,
       agentId,
-      address: prop.address,
-      city: prop.city,
-      state: prop.state,
+      address,
+      city,
+      state,
       stage: 0,
       leadStatus: 'Warm',
-      cashOffer: prop.cashOffer,
-      cashPlusOffer: prop.cashPlusOffer,
-      dealiodeskTransactionId: prop.transactionId,
+      cashOffer,
+      cashPlusOffer,
+      dealiodeskTransactionId: prop.propertyTransactionId,
     })
-
     added++
   }
 
