@@ -5,7 +5,7 @@ import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { requireUser } from '@/lib/auth'
 import { db } from '@/lib/db'
-import { agents, deals, notes, propertyNotes, tasks } from '@/lib/db/schema'
+import { activity, agents, deals, notes, propertyNotes, tasks } from '@/lib/db/schema'
 import { CONTACT_METHODS, LEAD_STATUSES } from '@/lib/stages'
 
 export type Result<T = object> = ({ ok: true } & T) | { ok: false; error: string; fieldErrors?: Record<string, string> }
@@ -62,6 +62,11 @@ export type DealInputType = z.input<typeof DealInput>
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0]
 
+/** Appends one row to the deal's activity log (the unified timeline's system events). */
+function logActivity(tx: Tx, userId: string, dealId: string, kind: string, data: Record<string, unknown> = {}) {
+  return tx.insert(activity).values({ userId, dealId, kind, data, createdBy: userId })
+}
+
 async function resolveAgent(tx: Tx, userId: string, a: z.output<typeof DealInput>['agent']): Promise<string | null> {
   if (a.mode === 'none') return null
   if (a.mode === 'existing') {
@@ -89,6 +94,7 @@ export async function createDeal(input: DealInputType): Promise<Result<{ id: str
         .insert(deals)
         .values({ userId: user.id, agentId, address: v.address, city: v.city, state: v.state, zip: v.zip, stage: v.stage, leadStatus: v.leadStatus, cashOffer: v.cashOffer, cashPlusOffer: v.cashPlusOffer })
         .returning({ id: deals.id })
+      await logActivity(tx, user.id, row.id, 'created')
       return row.id
     })
     refresh()
@@ -102,14 +108,31 @@ export async function updateDeal(dealId: string, input: DealInputType): Promise<
   try {
     const user = await requireUser()
     const v = DealInput.parse(input)
+    const did = id.parse(dealId)
     const found = await db.transaction(async (tx) => {
+      const [old] = await tx
+        .select({ stage: deals.stage, leadStatus: deals.leadStatus, cashOffer: deals.cashOffer, cashPlusOffer: deals.cashPlusOffer, agentId: deals.agentId, agentName: agents.name })
+        .from(deals)
+        .leftJoin(agents, eq(agents.id, deals.agentId))
+        .where(and(eq(deals.id, did), eq(deals.userId, user.id)))
+      if (!old) return false
       const agentId = await resolveAgent(tx, user.id, v.agent)
       const res = await tx
         .update(deals)
         .set({ agentId, address: v.address, city: v.city, state: v.state, zip: v.zip, stage: v.stage, leadStatus: v.leadStatus, cashOffer: v.cashOffer, cashPlusOffer: v.cashPlusOffer })
-        .where(and(eq(deals.id, id.parse(dealId)), eq(deals.userId, user.id)))
+        .where(and(eq(deals.id, did), eq(deals.userId, user.id)))
         .returning({ id: deals.id })
-      return res.length > 0
+      if (res.length === 0) return false
+
+      if (old.stage !== v.stage) await logActivity(tx, user.id, did, 'stage_changed', { from: old.stage, to: v.stage })
+      if (old.leadStatus !== v.leadStatus) await logActivity(tx, user.id, did, 'status_changed', { from: old.leadStatus, to: v.leadStatus })
+      if (old.cashOffer !== v.cashOffer || old.cashPlusOffer !== v.cashPlusOffer)
+        await logActivity(tx, user.id, did, 'offer_changed', { cashFrom: old.cashOffer, cashTo: v.cashOffer, cashPlusFrom: old.cashPlusOffer, cashPlusTo: v.cashPlusOffer })
+      if ((old.agentId ?? null) !== (agentId ?? null)) {
+        const newName = agentId ? (await tx.select({ name: agents.name }).from(agents).where(eq(agents.id, agentId)))[0]?.name ?? null : null
+        await logActivity(tx, user.id, did, 'agent_changed', { from: old.agentName ?? null, to: newName })
+      }
+      return true
     })
     if (!found) return { ok: false, error: 'That deal no longer exists.' }
     refresh()
@@ -134,8 +157,13 @@ export async function deleteDeal(dealId: string): Promise<Result> {
 export async function setLeadStatus(dealId: string, status: string): Promise<Result> {
   try {
     const user = await requireUser()
+    const did = id.parse(dealId)
     const s = z.enum(LEAD_STATUSES).parse(status)
-    await db.update(deals).set({ leadStatus: s }).where(and(eq(deals.id, id.parse(dealId)), eq(deals.userId, user.id)))
+    await db.transaction(async (tx) => {
+      const [cur] = await tx.select({ leadStatus: deals.leadStatus }).from(deals).where(and(eq(deals.id, did), eq(deals.userId, user.id)))
+      const res = await tx.update(deals).set({ leadStatus: s }).where(and(eq(deals.id, did), eq(deals.userId, user.id))).returning({ id: deals.id })
+      if (res.length && cur && cur.leadStatus !== s) await logActivity(tx, user.id, did, 'status_changed', { from: cur.leadStatus, to: s })
+    })
     refresh()
     return { ok: true }
   } catch (e) {
@@ -146,8 +174,13 @@ export async function setLeadStatus(dealId: string, status: string): Promise<Res
 export async function setStage(dealId: string, stage: number): Promise<Result> {
   try {
     const user = await requireUser()
+    const did = id.parse(dealId)
     const s = z.number().int().min(0).max(11).parse(stage)
-    await db.update(deals).set({ stage: s }).where(and(eq(deals.id, id.parse(dealId)), eq(deals.userId, user.id)))
+    await db.transaction(async (tx) => {
+      const [cur] = await tx.select({ stage: deals.stage }).from(deals).where(and(eq(deals.id, did), eq(deals.userId, user.id)))
+      const res = await tx.update(deals).set({ stage: s }).where(and(eq(deals.id, did), eq(deals.userId, user.id))).returning({ id: deals.id })
+      if (res.length && cur && cur.stage !== s) await logActivity(tx, user.id, did, 'stage_changed', { from: cur.stage, to: s })
+    })
     refresh()
     return { ok: true }
   } catch (e) {
@@ -204,7 +237,37 @@ export async function logFollowUp(input: z.input<typeof LogFollowUpInput>): Prom
           method: v.next.method,
           source: 'Follow-up',
         })
+        await logActivity(tx, user.id, v.dealId, 'followup_scheduled', { method: v.next.method, date: v.next.date, time: v.next.time })
+        // Confirming a scheduled step advances an active cadence — stops at the last step, paused when dead/closed/lost.
+        await tx.execute(sql`
+          update crm.deals d set cadence_step = d.cadence_step + 1
+            from crm.cadences c
+           where d.id = ${v.dealId} and d.user_id = ${user.id}
+             and d.cadence_id = c.id
+             and d.cadence_step < jsonb_array_length(c.steps)
+             and d.stage <= 9 and d.lead_status <> 'Dead'`)
       }
+    })
+    refresh()
+    return { ok: true }
+  } catch (e) {
+    return fail(e)
+  }
+}
+
+/** Marks a task done from the deal page and records it on the deal's timeline. */
+export async function completeTask(taskId: string): Promise<Result> {
+  try {
+    const user = await requireUser()
+    const tid = id.parse(taskId)
+    await db.transaction(async (tx) => {
+      const [t] = await tx
+        .select({ dealId: tasks.dealId, title: tasks.title, method: tasks.method, source: tasks.source, done: tasks.done })
+        .from(tasks)
+        .where(and(eq(tasks.id, tid), eq(tasks.userId, user.id)))
+      if (!t || t.done) return
+      await tx.update(tasks).set({ done: true, doneAt: sql`now()` }).where(and(eq(tasks.id, tid), eq(tasks.userId, user.id)))
+      if (t.dealId) await logActivity(tx, user.id, t.dealId, 'followup_done', { title: t.title, method: t.method, source: t.source })
     })
     refresh()
     return { ok: true }

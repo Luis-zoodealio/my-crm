@@ -98,6 +98,7 @@ export type LeadRow = {
   daysSinceContact: number
   followUps: number
   firstContactMade: boolean
+  openTasks: number
 }
 
 export async function queryLeads(userId: string, settings: UserSettings, rules: Rule[], sorts: Sort[], page: number) {
@@ -108,6 +109,7 @@ export async function queryLeads(userId: string, settings: UserSettings, rules: 
            a.name as agent_name,
            ${DAYS_SINCE_CONTACT}::int as days_since_contact,
            (select count(*)::int from crm.notes n where n.deal_id = d.id) as note_count,
+           (select count(*)::int from crm.tasks t2 where t2.deal_id = d.id and not t2.done) as open_tasks,
            count(*) over () as total
       from crm.deals d
       left join crm.agents a on a.id = d.agent_id
@@ -131,6 +133,7 @@ export async function queryLeads(userId: string, settings: UserSettings, rules: 
     daysSinceContact: Number(r.days_since_contact),
     followUps: Math.max(0, Number(r.note_count) - 1),
     firstContactMade: Number(r.note_count) > 0,
+    openTasks: Number(r.open_tasks),
   }))
   return { leads, total: list.length ? Number(list[0].total) : 0 }
 }
@@ -160,6 +163,33 @@ export async function followUpQueue(userId: string, settings: UserSettings): Pro
     zip: r.zip as string | null,
     title: r.title as string,
     method: r.method as string,
+    days: Number(r.days),
+  }))
+}
+
+export type OpenTaskItem = { id: string; dealId: string; address: string; city: string | null; state: string | null; zip: string | null; title: string; method: string; source: string; days: number }
+
+/** Every open, deal-linked task across the book, soonest due first — the Leads "Open tasks" box. */
+export async function openTasksList(userId: string, settings: UserSettings): Promise<OpenTaskItem[]> {
+  const tz = settings.timezone
+  const rows = await db.execute(sql`
+    select t.id, d.id as deal_id, d.address, d.city, d.state, d.zip, t.title, t.method, t.source,
+           ((t.due_at at time zone ${tz})::date - (now() at time zone ${tz})::date)::int as days
+      from crm.tasks t
+      join crm.deals d on d.id = t.deal_id and d.user_id = t.user_id
+     where t.user_id = ${userId} and not t.done
+     order by t.due_at asc
+     limit 100`)
+  return ([...rows] as Raw[]).map((r) => ({
+    id: r.id as string,
+    dealId: r.deal_id as string,
+    address: r.address as string,
+    city: r.city as string | null,
+    state: r.state as string | null,
+    zip: r.zip as string | null,
+    title: r.title as string,
+    method: r.method as string,
+    source: r.source as string,
     days: Number(r.days),
   }))
 }

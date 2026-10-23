@@ -6,6 +6,7 @@ import { ConfirmDialog } from '@/components/Modal'
 import { ScheduleModal } from '@/components/ScheduleModal'
 import {
   addPropertyNote,
+  completeTask,
   deleteNote,
   deletePropertyNote,
   logFollowUp,
@@ -15,7 +16,9 @@ import {
   updatePropertyNote,
   type Result,
 } from '@/lib/deals/actions'
-import type { NoteItem, PropertyNoteItem } from '@/lib/deals/query'
+import { setDealCadence } from '@/lib/cadences/actions'
+import type { DealTask, NoteItem, TimelineItem } from '@/lib/deals/query'
+import { money } from '@/lib/format'
 import { CONTACT_METHODS, LEAD_STATUS_COLORS, LEAD_STATUSES, STAGES, type LeadStatus } from '@/lib/stages'
 
 /** Runs a server action in a transition and keeps its error message. */
@@ -102,67 +105,80 @@ function TypeChips({ value, onChange }: { value: string; onChange: (t: (typeof C
 const inThreeDays = () => new Date(Date.now() + 3 * 864e5).toLocaleDateString('en-CA')
 
 /**
- * Logs an exchange and, by default, schedules the next follow-up in one step.
- * The first exchange on a deal is "first contact"; everything after counts as a follow-up.
+ * One composer for the whole deal timeline: log a contact exchange (with optional
+ * next-follow-up scheduling) or jot a property note — no separate sections.
  */
-export function LogFollowUp({ dealId, hasContact }: { dealId: string; hasContact: boolean }) {
+export function ActivityComposer({ dealId, hasContact, suggestion }: { dealId: string; hasContact: boolean; suggestion: { days: number; method: string; label: string } | null }) {
+  const [mode, setMode] = useState<'exchange' | 'property'>('exchange')
   const [text, setText] = useState('')
   const [type, setType] = useState<(typeof CONTACT_METHODS)[number]>('Call')
   const [scheduleOn, setScheduleOn] = useState(true)
-  const [date, setDate] = useState(inThreeDays)
+  const [date, setDate] = useState(() => (suggestion ? new Date(Date.now() + suggestion.days * 864e5).toLocaleDateString('en-CA') : inThreeDays()))
   const [time, setTime] = useState('09:00')
-  const [nextMethod, setNextMethod] = useState<(typeof CONTACT_METHODS)[number]>('Call')
+  const [nextMethod, setNextMethod] = useState<(typeof CONTACT_METHODS)[number]>((suggestion?.method as (typeof CONTACT_METHODS)[number]) ?? 'Call')
   const { pending, error, run } = useAction()
-  const submit = () =>
-    text.trim() &&
-    run(
-      () => logFollowUp({ dealId, type, body: text, next: scheduleOn ? { date, time, method: nextMethod } : null }),
-      () => setText(''),
-    )
+  const submit = () => {
+    if (!text.trim()) return
+    if (mode === 'exchange')
+      run(() => logFollowUp({ dealId, type, body: text, next: scheduleOn ? { date, time, method: nextMethod } : null }), () => setText(''))
+    else run(() => addPropertyNote(dealId, text), () => setText(''))
+  }
 
   const fieldClass = 'rounded-sm border border-border bg-white px-2.5 py-2 text-sm text-ink outline-none focus:border-magenta'
+  const tab = (m: 'exchange' | 'property', label: string) => (
+    <button type="button" aria-pressed={mode === m} onClick={() => setMode(m)} className={`cursor-pointer rounded-full px-3.5 py-1.5 text-[13px] font-semibold ${mode === m ? 'bg-ink text-white' : 'bg-bg-warm text-gray-700'}`}>
+      {label}
+    </button>
+  )
   return (
     <div className="flex flex-col gap-3 rounded-[14px] border border-border bg-white p-4">
+      <div className="flex gap-1.5">
+        {tab('exchange', 'Contact exchange')}
+        {tab('property', 'Property note')}
+      </div>
       <textarea
         value={text}
         onChange={(e) => setText(e.target.value)}
         onKeyDown={(e) => (e.metaKey || e.ctrlKey) && e.key === 'Enter' && submit()}
-        placeholder={hasContact ? 'What happened on this call, text or email?' : 'Log your first contact with the agent'}
-        aria-label="What happened"
+        placeholder={mode === 'property' ? 'Condition, access, neighborhood — anything about the property' : hasContact ? 'What happened on this call, text or email?' : 'Log your first contact with the agent'}
+        aria-label={mode === 'property' ? 'Property note' : 'What happened'}
         rows={3}
         maxLength={5000}
         className="resize-none bg-transparent text-[15px] leading-normal text-ink outline-none"
       />
-      <div className="flex flex-wrap items-center gap-2.5">
-        <span className="text-[13px] font-semibold text-gray-700">How</span>
-        <TypeChips value={type} onChange={setType} />
-      </div>
-
-      <div className="flex flex-col gap-2.5 rounded-md border border-border bg-bg p-3">
-        <label className="flex cursor-pointer items-center gap-2 text-[13px] font-semibold">
-          <input type="checkbox" checked={scheduleOn} onChange={(e) => setScheduleOn(e.target.checked)} className="size-4 accent-[#ac0a55]" />
-          Schedule next follow-up
-        </label>
-        {scheduleOn && (
-          <div className="flex flex-col gap-2.5">
-            <div className="grid grid-cols-2 gap-2.5">
-              <label className="flex flex-col gap-1 text-xs font-semibold text-gray-700">
-                Date
-                <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className={fieldClass} />
-              </label>
-              <label className="flex flex-col gap-1 text-xs font-semibold text-gray-700">
-                Time
-                <input type="time" value={time} onChange={(e) => setTime(e.target.value)} className={fieldClass} />
-              </label>
-            </div>
-            <TypeChips value={nextMethod} onChange={setNextMethod} />
+      {mode === 'exchange' && (
+        <>
+          <div className="flex flex-wrap items-center gap-2.5">
+            <span className="text-[13px] font-semibold text-gray-700">How</span>
+            <TypeChips value={type} onChange={setType} />
           </div>
-        )}
-      </div>
-
+          <div className="flex flex-col gap-2.5 rounded-md border border-border bg-bg p-3">
+            <label className="flex cursor-pointer items-center gap-2 text-[13px] font-semibold">
+              <input type="checkbox" checked={scheduleOn} onChange={(e) => setScheduleOn(e.target.checked)} className="size-4 accent-[#ac0a55]" />
+              Schedule next follow-up
+            </label>
+            {suggestion && <span className="text-xs font-semibold text-magenta">↻ Suggested by cadence · {suggestion.label}</span>}
+            {scheduleOn && (
+              <div className="flex flex-col gap-2.5">
+                <div className="grid grid-cols-2 gap-2.5">
+                  <label className="flex flex-col gap-1 text-xs font-semibold text-gray-700">
+                    Date
+                    <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className={fieldClass} />
+                  </label>
+                  <label className="flex flex-col gap-1 text-xs font-semibold text-gray-700">
+                    Time
+                    <input type="time" value={time} onChange={(e) => setTime(e.target.value)} className={fieldClass} />
+                  </label>
+                </div>
+                <TypeChips value={nextMethod} onChange={setNextMethod} />
+              </div>
+            )}
+          </div>
+        </>
+      )}
       <div className="flex justify-end">
         <Button size="xs" onClick={submit} disabled={pending || !text.trim()}>
-          {pending ? 'Saving…' : 'Log exchange'}
+          {pending ? 'Saving…' : mode === 'property' ? 'Save note' : 'Log exchange'}
         </Button>
       </div>
       <Err msg={error} />
@@ -170,8 +186,92 @@ export function LogFollowUp({ dealId, hasContact }: { dealId: string; hasContact
   )
 }
 
-export function NoteFeed({ items }: { items: NoteItem[] }) {
-  return items.map((n) => <NoteCard key={n.id} note={n} />)
+const EVENT_ICON: Record<string, string> = {
+  created: '✨', imported: '✨', stage_changed: '➡️', status_changed: '🏷️',
+  offer_changed: '💲', agent_changed: '👤', followup_scheduled: '🔁', followup_done: '✅',
+}
+
+function eventText(kind: string, data: Record<string, unknown>): string {
+  const n = (x: unknown) => (x == null ? null : Number(x))
+  const stage = (x: unknown) => STAGES[Number(x)]?.name ?? '—'
+  switch (kind) {
+    case 'created': return 'Deal created'
+    case 'imported': return 'Imported from DealioDesk'
+    case 'stage_changed': return `Stage: ${stage(data.from)} → ${stage(data.to)}`
+    case 'status_changed': return `Lead status: ${data.from ?? '—'} → ${data.to ?? '—'}`
+    case 'offer_changed': return `Offer updated — Cash ${money(n(data.cashFrom))} → ${money(n(data.cashTo))}, Cash+ ${money(n(data.cashPlusFrom))} → ${money(n(data.cashPlusTo))}`
+    case 'agent_changed': return `Agent: ${data.from ?? 'none'} → ${data.to ?? 'none'}`
+    case 'followup_scheduled': return `Scheduled a ${data.method} follow-up for ${data.date}${data.time ? `, ${data.time}` : ''}`
+    case 'followup_done': return data.source === 'Manual' ? `Completed task: ${data.title ?? ''}`.trim() : `Completed a ${data.method ?? ''} follow-up`.replace(/\s+/g, ' ')
+    default: return kind
+  }
+}
+
+function EventRow({ item }: { item: Extract<TimelineItem, { source: 'event' }> }) {
+  return (
+    <div className="flex items-center gap-2.5 px-1.5 py-1 text-[13px] text-gray-500">
+      <span aria-hidden className="w-5 text-center">{EVENT_ICON[item.kind] ?? '•'}</span>
+      <span className="flex-1 leading-snug">{eventText(item.kind, item.data)}</span>
+      <span className="whitespace-nowrap text-xs">{item.when}</span>
+    </div>
+  )
+}
+
+function PropertyCard({ note }: { note: { id: string; body: string; when: string } }) {
+  const [editing, setEditing] = useState(false)
+  const [text, setText] = useState(note.body)
+  const [confirm, setConfirm] = useState(false)
+  const { pending, error, run, setError } = useAction()
+  return (
+    <div className="flex flex-col gap-2 rounded-[14px] border border-border bg-white p-4">
+      <div className="flex items-center justify-between gap-3">
+        <span className="rounded-full bg-[#eef2ff] px-2.5 py-[3px] text-xs font-bold text-[#4338ca]">Property note</span>
+        <span className="flex items-center gap-3 text-xs text-gray-500">
+          {note.when}
+          {!editing && (
+            <>
+              <button type="button" onClick={() => setEditing(true)} className="cursor-pointer font-semibold text-gray-700 hover:text-magenta">Edit</button>
+              <button type="button" onClick={() => { setError(''); setConfirm(true) }} className="cursor-pointer font-semibold text-gray-700 hover:text-magenta">Delete</button>
+            </>
+          )}
+        </span>
+      </div>
+      {editing ? (
+        <div className="flex flex-col gap-2.5">
+          <textarea value={text} onChange={(e) => setText(e.target.value)} aria-label="Edit property note" rows={3} maxLength={5000} className="resize-y rounded-sm border border-border bg-bg px-3 py-2.5 text-[15px] leading-normal outline-none focus:border-magenta" />
+          <div className="flex gap-2">
+            <Button size="xs" disabled={pending || !text.trim()} onClick={() => run(() => updatePropertyNote(note.id, text), () => setEditing(false))}>Save</Button>
+            <Button size="xs" variant="outline" onClick={() => { setEditing(false); setText(note.body); setError('') }}>Cancel</Button>
+          </div>
+        </div>
+      ) : (
+        <span className="whitespace-pre-wrap text-[15px] leading-normal">{note.body}</span>
+      )}
+      <Err msg={editing ? error : ''} />
+      {confirm && (
+        <ConfirmDialog detail={note.body.length > 140 ? note.body.slice(0, 140) + '…' : note.body} busy={pending} error={error} onCancel={() => setConfirm(false)} onConfirm={() => run(() => deletePropertyNote(note.id), () => setConfirm(false))} />
+      )}
+    </div>
+  )
+}
+
+/** The unified deal history: exchanges and property notes (editable) interleaved with read-only system events. */
+export function Timeline({ items }: { items: TimelineItem[] }) {
+  if (items.length === 0)
+    return <p className="rounded-[14px] border border-border bg-white p-4 text-sm text-gray-500">Nothing logged yet. Log your first exchange or property note above.</p>
+  return (
+    <div className="flex flex-col gap-2.5">
+      {items.map((it) =>
+        it.source === 'exchange' ? (
+          <NoteCard key={it.id} note={{ id: it.id, type: it.method, body: it.body, when: it.when }} />
+        ) : it.source === 'property' ? (
+          <PropertyCard key={it.id} note={{ id: it.id, body: it.body, when: it.when }} />
+        ) : (
+          <EventRow key={it.id} item={it} />
+        ),
+      )}
+    </div>
+  )
 }
 
 function NoteCard({ note }: { note: NoteItem }) {
@@ -221,67 +321,84 @@ function NoteCard({ note }: { note: NoteItem }) {
   )
 }
 
-export function PropertyNotes({ dealId, items }: { dealId: string; items: PropertyNoteItem[] }) {
-  const [text, setText] = useState('')
+export function OpenTasks({ dealId, dealLabel, tasks }: { dealId: string; dealLabel: string; tasks: DealTask[] }) {
+  const [adding, setAdding] = useState(false)
   const { pending, error, run } = useAction()
   return (
     <div className="flex flex-col gap-3 rounded-[14px] border border-border bg-white p-[18px]">
-      <h2 className="text-[13px] font-bold uppercase tracking-[.04em]">Property notes</h2>
-      <textarea
-        value={text}
-        onChange={(e) => setText(e.target.value)}
-        aria-label="Property note"
-        placeholder="Condition, access, neighborhood, anything about the property"
-        rows={3}
-        maxLength={5000}
-        className="resize-y rounded-md border border-border bg-bg px-3 py-2.5 text-sm leading-normal text-ink outline-none focus:border-magenta"
-      />
-      <Button size="xs" variant="outline" disabled={pending || !text.trim()} onClick={() => run(() => addPropertyNote(dealId, text), () => setText(''))}>
-        Save property note
-      </Button>
+      <div className="flex items-center justify-between">
+        <h2 className="text-[13px] font-bold uppercase tracking-[.04em]">Open tasks</h2>
+        <button type="button" onClick={() => setAdding(true)} className="cursor-pointer text-sm font-bold text-magenta">+ Add task</button>
+      </div>
+      {tasks.length === 0 ? (
+        <p className="text-sm text-gray-500">No open tasks — you&rsquo;re all caught up.</p>
+      ) : (
+        tasks.map((t) => <TaskRow key={t.id} task={t} pending={pending} onDone={() => run(() => completeTask(t.id))} />)
+      )}
       <Err msg={error} />
-      {items.map((p) => <PropertyNoteRow key={p.id} note={p} />)}
+      {adding && <ScheduleModal mode="task" dealId={dealId} dealLabel={dealLabel} onClose={() => setAdding(false)} />}
     </div>
   )
 }
 
-function PropertyNoteRow({ note }: { note: PropertyNoteItem }) {
-  const [editing, setEditing] = useState(false)
-  const [text, setText] = useState(note.body)
-  const [confirm, setConfirm] = useState(false)
-  const { pending, error, run, setError } = useAction()
+function TaskRow({ task, pending, onDone }: { task: DealTask; pending: boolean; onDone: () => void }) {
+  const when = task.days < 0 ? `Overdue ${-task.days}d` : task.days === 0 ? 'Today' : task.days === 1 ? 'Tomorrow' : `In ${task.days}d`
+  const color = task.days < 0 ? '#e11d74' : task.days === 0 ? '#b45309' : '#71717a'
   return (
-    <div className="flex flex-col gap-1 border-t border-border pt-3">
-      <div className="flex items-center justify-between text-xs text-gray-500">
-        <span>{note.when}</span>
-        {!editing && (
-          <span className="flex gap-3">
-            <button type="button" onClick={() => setEditing(true)} className="cursor-pointer font-semibold text-gray-700 hover:text-magenta">Edit</button>
-            <button type="button" onClick={() => { setError(''); setConfirm(true) }} className="cursor-pointer font-semibold text-gray-700 hover:text-magenta">Delete</button>
-          </span>
-        )}
-      </div>
-      {editing ? (
-        <div className="flex flex-col gap-2">
-          <textarea value={text} onChange={(e) => setText(e.target.value)} aria-label="Edit property note" rows={3} maxLength={5000} className="resize-y rounded-sm border border-border bg-bg px-3 py-2 text-sm leading-normal outline-none focus:border-magenta" />
-          <div className="flex gap-2">
-            <Button size="xs" disabled={pending || !text.trim()} onClick={() => run(() => updatePropertyNote(note.id, text), () => setEditing(false))}>Save</Button>
-            <Button size="xs" variant="outline" onClick={() => { setEditing(false); setText(note.body); setError('') }}>Cancel</Button>
-          </div>
-          <Err msg={error} />
+    <div className="flex items-start gap-2.5 border-t border-border pt-2.5 first:border-t-0 first:pt-0">
+      <button
+        type="button"
+        aria-label={`Mark "${task.title}" done`}
+        disabled={pending}
+        onClick={onDone}
+        className="mt-px size-[18px] flex-none cursor-pointer rounded-[5px] border-2 border-gray-300 transition-colors hover:border-magenta hover:bg-[#fbe6f0] disabled:opacity-50"
+      />
+      <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+        <span className="text-sm font-semibold leading-snug">{task.title}</span>
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs">
+          <span className="font-bold" style={{ color }}>{when}</span>
+          <span className="text-gray-500">· {task.method}</span>
+          <span className={`rounded-full px-1.5 py-px text-[11px] font-semibold ${task.source === 'Follow-up' ? 'bg-[#fbe6f0] text-magenta' : 'bg-bg-warm text-gray-700'}`}>{task.source}</span>
         </div>
-      ) : (
-        <span className="whitespace-pre-wrap text-sm leading-normal">{note.body}</span>
+      </div>
+    </div>
+  )
+}
+
+export function CadenceControl({
+  dealId,
+  current,
+  options,
+  status,
+}: {
+  dealId: string
+  current: { id: string; step: number; total: number } | null
+  options: { id: string; name: string; steps: number }[]
+  status: 'none' | 'active' | 'complete' | 'paused'
+}) {
+  const { pending, error, run } = useAction()
+  return (
+    <div className="flex flex-col gap-2.5 rounded-[14px] border border-border bg-white p-[18px]">
+      <h2 className="text-[13px] font-bold uppercase tracking-[.04em]">Cadence</h2>
+      <select
+        value={current?.id ?? ''}
+        disabled={pending}
+        onChange={(e) => run(() => setDealCadence(dealId, e.target.value || null))}
+        className="rounded-sm border border-border bg-white px-2.5 py-2 text-sm text-ink outline-none focus:border-magenta disabled:opacity-60"
+      >
+        <option value="">No cadence</option>
+        {options.map((o) => (
+          <option key={o.id} value={o.id}>{o.name} ({o.steps} steps)</option>
+        ))}
+      </select>
+      {current && status === 'complete' && <span className="text-sm font-semibold text-green-deep">✓ Cadence complete</span>}
+      {current && status === 'paused' && <span className="text-sm font-medium text-gray-500">Paused — deal is closed, lost or dead.</span>}
+      {current && status === 'active' && (
+        <span className="text-sm text-gray-700">
+          On step <b>{Math.min(current.step + 1, current.total)}</b> of {current.total}. Logging an exchange pre-fills your next touch.
+        </span>
       )}
-      {confirm && (
-        <ConfirmDialog
-          detail={note.body.length > 140 ? note.body.slice(0, 140) + '…' : note.body}
-          busy={pending}
-          error={error}
-          onCancel={() => setConfirm(false)}
-          onConfirm={() => run(() => deletePropertyNote(note.id), () => setConfirm(false))}
-        />
-      )}
+      <Err msg={error} />
     </div>
   )
 }

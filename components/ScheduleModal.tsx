@@ -13,7 +13,7 @@ const tomorrow = () => new Date(Date.now() + 864e5).toLocaleDateString('en-CA')
 
 type Props =
   | { mode: 'followup'; dealId: string; dealLabel: string; onClose: () => void }
-  | { mode: 'task'; onClose: () => void }
+  | { mode: 'task'; dealId?: string; dealLabel?: string; onClose: () => void }
 
 type PickedDeal = { id: string; label: string }
 
@@ -34,6 +34,9 @@ export function ScheduleModal(props: Props) {
   const [error, setError] = useState('')
   const [pending, start] = useTransition()
 
+  // Task mode opened from a deal page comes pre-linked — no deal picker.
+  const presetDeal = props.mode === 'task' && props.dealId ? { id: props.dealId, label: props.dealLabel ?? '' } : null
+
   function submit(e: React.FormEvent) {
     e.preventDefault()
     setError('')
@@ -42,7 +45,7 @@ export function ScheduleModal(props: Props) {
       const res =
         props.mode === 'followup'
           ? await scheduleFollowUp({ dealId: props.dealId, title, description, date, time, method })
-          : await createTask({ dealId: deal?.id ?? null, title, description, date, time, method })
+          : await createTask({ dealId: presetDeal?.id ?? deal?.id ?? null, title, description, date, time, method })
       if (!res.ok) setError(res.error)
       else onClose()
     })
@@ -53,6 +56,8 @@ export function ScheduleModal(props: Props) {
       <form onSubmit={submit} className="flex flex-col gap-[18px]">
         {props.mode === 'followup' ? (
           <span className="text-sm text-gray-500">{props.dealLabel}</span>
+        ) : presetDeal ? (
+          <span className="text-sm text-gray-500">{presetDeal.label}</span>
         ) : (
           <DealPicker deal={deal} onChange={setDeal} />
         )}

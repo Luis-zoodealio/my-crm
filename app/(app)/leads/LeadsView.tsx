@@ -7,7 +7,7 @@ import { Button, ButtonLink } from '@/components/Button'
 import { LeadPill } from '@/components/LeadPill'
 import { bulkUpdateDeals, deleteView, saveView, updateView } from '@/lib/leads/actions'
 import { FIELD_KEYS, FIELDS, MAX_RULES, newRule, OPS, PAGE_SIZE, SORT_KEYS, SORTS, enumOptions, sameSpec, type FieldKey, type SortKey } from '@/lib/leads/spec'
-import type { LeadRow, QueueItem } from '@/lib/leads/query'
+import type { LeadRow, OpenTaskItem, QueueItem } from '@/lib/leads/query'
 import { fullAddress, money } from '@/lib/format'
 import { STAGES } from '@/lib/stages'
 import type { Rule, Sort, ViewSpec } from '@/lib/views'
@@ -19,6 +19,7 @@ type Props = {
   total: number
   totalDeals: number
   queue: QueueItem[]
+  openTasks: OpenTaskItem[]
   agents: { id: string; label: string }[]
   views: ViewSpec[]
   rules: Rule[]
@@ -45,7 +46,7 @@ function hrefFor(d: Draft, views: ViewSpec[], page = 1) {
 }
 
 export function LeadsView(props: Props) {
-  const { leads, total, totalDeals, queue, agents, views, page } = props
+  const { leads, total, totalDeals, queue, openTasks, agents, views, page } = props
   const router = useRouter()
   const [pending, startTransition] = useTransition()
 
@@ -150,8 +151,8 @@ export function LeadsView(props: Props) {
   const rowIds = useMemo(() => leads.map((l) => l.id), [leads])
 
   return (
-    <div className="grid grid-cols-1 items-start gap-5 min-[1400px]:grid-cols-[minmax(0,1fr)_320px]">
-      <section className="flex flex-col gap-4 rounded-xl border border-border bg-white p-6">
+    <div className="grid grid-cols-1 gap-5 min-[1400px]:h-[calc(100vh-5rem)] min-[1400px]:grid-cols-[minmax(0,1fr)_320px]">
+      <section className="flex min-h-0 flex-col gap-4 rounded-xl border border-border bg-white p-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h1 className="text-2xl font-bold tracking-[-0.03em]">
             Leads{' '}
@@ -265,9 +266,9 @@ export function LeadsView(props: Props) {
         )}
         {!panel && error && <p role="alert" className="text-sm text-magenta-bright">{error}</p>}
 
-        <div className="overflow-x-auto">
+        <div className="max-h-[70vh] overflow-auto min-[1400px]:max-h-none min-[1400px]:min-h-0 min-[1400px]:flex-1">
           <div role="table" aria-label="Leads" aria-rowcount={leads.length + 1} className={`min-w-[700px] transition-opacity ${pending ? 'opacity-60' : ''}`} aria-busy={pending}>
-            <div role="row" className={`grid ${gridCols} gap-3 border-b border-border px-3 py-2.5 text-xs font-semibold uppercase tracking-[.04em] text-gray-500`}>
+            <div role="row" className={`sticky top-0 z-10 grid ${gridCols} gap-3 border-b border-border bg-white px-3 py-2.5 text-xs font-semibold uppercase tracking-[.04em] text-gray-500`}>
               <div role="columnheader" aria-label="Select">
                 <input type="checkbox" aria-label="Select all on this page" checked={allOnPage} onChange={() => setSel(allOnPage ? new Set() : new Set(rowIds))} className="size-[18px] accent-[#ac0a55]" />
               </div>
@@ -309,6 +310,12 @@ export function LeadsView(props: Props) {
                         <span className="text-[15px] font-bold">{fullAddress(d)}</span>
                         <span className="text-[13px] text-gray-500">{d.agentName ?? 'No agent'}</span>
                       </Link>
+                      {d.openTasks > 0 && (
+                        <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-[#fff4e5] px-2 py-0.5 text-[11px] font-bold text-[#b45309]">
+                          <span className="size-1.5 rounded-full bg-[#b45309]" />
+                          {d.openTasks} open task{d.openTasks === 1 ? '' : 's'}
+                        </span>
+                      )}
                     </div>
                     <div role="cell" className="text-sm text-gray-700">{STAGES[d.stage].name}</div>
                     <div role="cell" className="text-[13px]">
@@ -346,24 +353,53 @@ export function LeadsView(props: Props) {
         )}
       </section>
 
-      <aside className="flex flex-col gap-3 rounded-xl border border-border bg-white p-[22px]">
-        <h2 className="text-lg font-bold tracking-[-0.02em]">Follow-up queue</h2>
-        {queue.length === 0 && <p className="text-sm text-gray-500">No follow-ups due in the next 2 days.</p>}
-        {queue.map((q) => {
-          const when = q.days < 0 ? `Overdue ${-q.days}d` : q.days === 0 ? 'Today' : q.days === 1 ? 'Tomorrow' : 'In 2 days'
-          const color = q.days < 0 ? '#e11d74' : q.days === 0 ? '#ac0a55' : '#b45309'
-          return (
-            <Link key={q.dealId} href={`/deals/${q.dealId}?from=leads`} className="flex flex-col gap-1.5 rounded-lg bg-bg p-3.5 text-ink hover:text-ink">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold" style={{ color }}>{when}</span>
-                <span className="text-xs text-gray-500">{q.method}</span>
-              </div>
-              <span className="text-[15px] font-bold">{fullAddress(q)}</span>
-              <span className="text-[13px] leading-[1.4] text-gray-700">{q.title}</span>
-            </Link>
-          )
-        })}
-      </aside>
+      <div className="flex min-h-0 flex-col gap-5">
+        <aside className="flex flex-col gap-3 rounded-xl border border-border bg-white p-[22px]">
+          <h2 className="text-lg font-bold tracking-[-0.02em]">Follow-up queue</h2>
+          {queue.length === 0 && <p className="text-sm text-gray-500">No follow-ups due in the next 2 days.</p>}
+          {queue.map((q) => {
+            const when = q.days < 0 ? `Overdue ${-q.days}d` : q.days === 0 ? 'Today' : q.days === 1 ? 'Tomorrow' : 'In 2 days'
+            const color = q.days < 0 ? '#e11d74' : q.days === 0 ? '#ac0a55' : '#b45309'
+            return (
+              <Link key={q.dealId} href={`/deals/${q.dealId}?from=leads`} className="flex flex-col gap-1.5 rounded-lg bg-bg p-3.5 text-ink hover:text-ink">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold" style={{ color }}>{when}</span>
+                  <span className="text-xs text-gray-500">{q.method}</span>
+                </div>
+                <span className="text-[15px] font-bold">{fullAddress(q)}</span>
+                <span className="text-[13px] leading-[1.4] text-gray-700">{q.title}</span>
+              </Link>
+            )
+          })}
+        </aside>
+
+        <aside className="flex min-h-0 flex-col gap-3 rounded-xl border border-border bg-white p-[22px] min-[1400px]:flex-1">
+          <div className="flex items-baseline justify-between">
+            <h2 className="text-lg font-bold tracking-[-0.02em]">Open tasks</h2>
+            <span className="text-[13px] font-semibold text-gray-500">{openTasks.length}</span>
+          </div>
+          {openTasks.length === 0 ? (
+            <p className="text-sm text-gray-500">No open tasks right now.</p>
+          ) : (
+            <div className="flex max-h-[52vh] flex-col gap-2 overflow-y-auto min-[1400px]:max-h-none min-[1400px]:min-h-0 min-[1400px]:flex-1">
+              {openTasks.map((t) => {
+                const when = t.days < 0 ? `Overdue ${-t.days}d` : t.days === 0 ? 'Today' : t.days === 1 ? 'Tomorrow' : `In ${t.days}d`
+                const color = t.days < 0 ? '#e11d74' : t.days === 0 ? '#ac0a55' : t.days <= 2 ? '#b45309' : '#71717a'
+                return (
+                  <Link key={t.id} href={`/deals/${t.dealId}?from=leads`} className="flex flex-col gap-1 rounded-lg bg-bg p-3 text-ink hover:text-ink">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-xs font-bold" style={{ color }}>{when}</span>
+                      <span className="text-xs text-gray-500">{t.method} · {t.source}</span>
+                    </div>
+                    <span className="text-sm font-semibold leading-snug">{t.title}</span>
+                    <span className="text-[13px] text-gray-500">{fullAddress(t)}</span>
+                  </Link>
+                )
+              })}
+            </div>
+          )}
+        </aside>
+      </div>
     </div>
   )
 }

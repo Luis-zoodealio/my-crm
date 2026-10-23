@@ -1,11 +1,12 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { requireUser } from '@/lib/auth'
-import { getDealDetail, getNotes, getPropertyNotes } from '@/lib/deals/query'
+import { listCadences } from '@/lib/cadences/query'
+import { getDealDetail, getOpenTasks, getTimeline } from '@/lib/deals/query'
 import { fullAddress, money, plural } from '@/lib/format'
 import { LAST_ACTIVE_STAGE, STAGES } from '@/lib/stages'
 import { BackLink } from '@/components/BackLink'
-import { FollowUpButton, LeadStatusPills, LogFollowUp, NoteFeed, PropertyNotes, StageBar } from './DealParts'
+import { ActivityComposer, CadenceControl, FollowUpButton, LeadStatusPills, OpenTasks, StageBar, Timeline } from './DealParts'
 
 const FROM: Record<string, { label: string; href: string }> = {
   dashboard: { label: 'Dashboard', href: '/dashboard' },
@@ -30,9 +31,10 @@ export default async function DealPage({ params, searchParams }: PageProps<'/dea
   if (!deal) notFound()
 
   const showAll = sp.notes === 'all'
-  const [feed, propertyNotes] = await Promise.all([
-    getNotes(user.id, id, user.settings.timezone, showAll),
-    getPropertyNotes(user.id, id, user.settings.timezone),
+  const [timeline, openTasks, cadences] = await Promise.all([
+    getTimeline(user.id, id, user.settings.timezone, showAll),
+    getOpenTasks(user.id, id, user.settings.timezone),
+    listCadences(user.id),
   ])
 
   const from = FROM[typeof sp.from === 'string' ? sp.from : ''] ?? FROM.leads
@@ -44,10 +46,16 @@ export default async function DealPage({ params, searchParams }: PageProps<'/dea
       : stale
         ? `Stale: no contact in ${deal.daysSinceContact} days`
         : `Last contact ${plural(deal.daysSinceContact, 'day')} ago`
-  const fu = deal.followUp
-  const fuLabel = !fu ? 'None scheduled' : fu.days < 0 ? `Overdue by ${plural(-fu.days, 'day')}` : fu.days === 0 ? 'Today' : `In ${plural(fu.days, 'day')}`
-  const fuColor = !fu ? '#71717a' : fu.days < 0 ? '#e11d74' : fu.days === 0 ? '#b45309' : '#09090b'
   const a = deal.agent
+
+  // Cadence: suggest the current step's touch when active; stop at the last step; pause when dead/closed/lost.
+  const cad = deal.cadence
+  const cadenceActive = deal.stage <= LAST_ACTIVE_STAGE && deal.leadStatus !== 'Dead'
+  const cadStatus: 'none' | 'active' | 'complete' | 'paused' = !cad ? 'none' : !cadenceActive ? 'paused' : cad.step >= cad.steps.length ? 'complete' : 'active'
+  const suggestion =
+    cad && cadStatus === 'active'
+      ? { days: cad.steps[cad.step].days, method: cad.steps[cad.step].method, label: `${cad.name} · step ${cad.step + 1} of ${cad.steps.length}` }
+      : null
 
   return (
     <>
@@ -72,17 +80,16 @@ export default async function DealPage({ params, searchParams }: PageProps<'/dea
 
       <div className="grid grid-cols-1 items-start gap-5 min-[1200px]:grid-cols-[minmax(0,1fr)_340px]">
         <div className="flex flex-col gap-3.5">
-          <LogFollowUp dealId={deal.id} hasContact={feed.items.length > 0} />
-          {feed.items.length === 0 && (
-            <p className="rounded-[14px] border border-border bg-white p-4 text-sm text-gray-500">No exchanges logged yet. Log your first call, text or email above.</p>
-          )}
-          <NoteFeed items={feed.items} />
-          {feed.hasMore && (
-            <Link href={`/deals/${deal.id}?notes=all${typeof sp.from === 'string' ? `&from=${sp.from}` : ''}`} className="w-fit text-sm font-bold">Show older notes</Link>
+          <ActivityComposer dealId={deal.id} hasContact={deal.firstContactDays !== null} suggestion={suggestion} />
+          <Timeline items={timeline.items} />
+          {timeline.hasMore && (
+            <Link href={`/deals/${deal.id}?notes=all${typeof sp.from === 'string' ? `&from=${sp.from}` : ''}`} className="w-fit text-sm font-bold">Show full history</Link>
           )}
         </div>
 
         <div className="flex flex-col gap-3.5">
+          <OpenTasks dealId={deal.id} dealLabel={label} tasks={openTasks} />
+
           <div className="flex flex-col gap-3 rounded-[14px] border border-border bg-white p-[18px]">
             <h2 className="text-[13px] font-bold uppercase tracking-[.04em]">Follow-ups</h2>
             <div className="flex items-baseline gap-2">
@@ -95,16 +102,18 @@ export default async function DealPage({ params, searchParams }: PageProps<'/dea
                 <span className="font-semibold">{deal.followUps >= 1 ? (deal.daysSinceContact === 0 ? 'Today' : `${plural(deal.daysSinceContact, 'day')} ago`) : 'None yet'}</span>
               </div>
               <div className="flex justify-between gap-2 border-t border-border pt-2">
-                <span className="text-gray-500">Next scheduled</span>
-                <span className="font-semibold" style={{ color: fuColor }}>{fuLabel}</span>
-              </div>
-              <div className="flex justify-between gap-2 border-t border-border pt-2">
                 <span className="text-gray-500">First contact</span>
                 <span className="font-semibold">{deal.firstContactDays === null ? 'Not made yet' : deal.firstContactDays === 0 ? 'Today' : `${plural(deal.firstContactDays, 'day')} ago`}</span>
               </div>
             </div>
-            {fu && <span className="text-sm text-gray-500">{fu.title} · {fu.method}{fu.description ? ` — ${fu.description}` : ''}</span>}
           </div>
+
+          <CadenceControl
+            dealId={deal.id}
+            current={cad ? { id: cad.id, step: cad.step, total: cad.steps.length } : null}
+            options={cadences.map((c) => ({ id: c.id, name: c.name, steps: c.steps.length }))}
+            status={cadStatus}
+          />
 
           <div className="flex flex-col gap-3 rounded-[14px] border border-border bg-white p-[18px]">
             <h2 className="text-[13px] font-bold uppercase tracking-[.04em]">Agent</h2>
@@ -134,8 +143,6 @@ export default async function DealPage({ params, searchParams }: PageProps<'/dea
             <div className="flex items-baseline justify-between"><span className="text-[13px] opacity-90">Cash+</span><span className="text-[26px] font-extrabold tracking-[-0.04em]">{money(deal.cashPlusOffer)}</span></div>
             <span className="text-[13px]">{STAGES[deal.stage].name}</span>
           </div>
-
-          <PropertyNotes dealId={deal.id} items={propertyNotes} />
         </div>
       </div>
     </>

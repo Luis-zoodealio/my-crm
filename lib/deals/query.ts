@@ -3,9 +3,7 @@ import { and, desc, eq, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import type { UserSettings } from '@/lib/bootstrap'
 import { db } from '@/lib/db'
-import { notes, propertyNotes } from '@/lib/db/schema'
-
-export const NOTES_PAGE = 50
+import { activity, notes, propertyNotes } from '@/lib/db/schema'
 
 export type DealDetail = {
   id: string
@@ -22,10 +20,10 @@ export type DealDetail = {
   firstContactDays: number | null
   agent: { id: string; name: string; agency: string | null; phone: string | null; email: string | null; dealCount: number } | null
   followUp: { title: string; description: string | null; method: string; days: number } | null
+  cadence: { id: string; name: string; steps: { days: number; method: string }[]; step: number } | null
 }
 
 export type NoteItem = { id: string; type: string; body: string; when: string }
-export type PropertyNoteItem = { id: string; body: string; when: string }
 
 type Raw = Record<string, unknown>
 
@@ -52,9 +50,11 @@ export async function getDealDetail(userId: string, id: string, settings: UserSe
            a.id as agent_id, a.name as agent_name, a.agency, a.phone, a.email,
            (select count(*)::int from crm.deals x where x.agent_id = d.agent_id and x.user_id = d.user_id) as agent_deals,
            fu.title as fu_title, fu.description as fu_description, fu.method as fu_method,
-           ((fu.due_at at time zone ${tz})::date - (now() at time zone ${tz})::date)::int as fu_days
+           ((fu.due_at at time zone ${tz})::date - (now() at time zone ${tz})::date)::int as fu_days,
+           d.cadence_id, d.cadence_step, c.name as cadence_name, c.steps as cadence_steps
       from crm.deals d
       left join crm.agents a on a.id = d.agent_id
+      left join crm.cadences c on c.id = d.cadence_id
       left join lateral (
         select t.due_at, t.title, t.description, t.method
           from crm.tasks t
@@ -90,33 +90,54 @@ export async function getDealDetail(userId: string, id: string, settings: UserSe
     followUp: r.fu_title
       ? { title: r.fu_title as string, description: r.fu_description as string | null, method: r.fu_method as string, days: Number(r.fu_days) }
       : null,
+    cadence: r.cadence_id
+      ? { id: r.cadence_id as string, name: r.cadence_name as string, steps: (r.cadence_steps as { days: number; method: string }[]) ?? [], step: Number(r.cadence_step) }
+      : null,
   }
 }
 
-/** Newest first. Fetches one extra row so the caller knows whether older notes exist. */
-export async function getNotes(userId: string, dealId: string, tz: string, all: boolean) {
-  const rows = await db
-    .select()
-    .from(notes)
-    .where(and(eq(notes.userId, userId), eq(notes.dealId, dealId)))
-    .orderBy(desc(notes.createdAt), desc(notes.id))
-    .limit(all ? 5000 : NOTES_PAGE + 1)
-  const hasMore = !all && rows.length > NOTES_PAGE
-  const items: NoteItem[] = rows.slice(0, all ? undefined : NOTES_PAGE).map((n) => ({
-    id: n.id,
-    type: n.type,
-    body: n.body,
-    when: whenLabel(n.createdAt, tz),
+// ---------- open tasks on a deal ----------
+export type DealTask = { id: string; title: string; description: string | null; method: string; source: string; days: number }
+
+/** Every not-done task on the deal (follow-ups and manual), soonest due first. `days` is relative to today in the user's tz. */
+export async function getOpenTasks(userId: string, dealId: string, tz: string): Promise<DealTask[]> {
+  const rows = await db.execute(sql`
+    select t.id, t.title, t.description, t.method, t.source,
+           ((t.due_at at time zone ${tz})::date - (now() at time zone ${tz})::date)::int as days
+      from crm.tasks t
+     where t.deal_id = ${dealId} and t.user_id = ${userId} and not t.done
+     order by t.due_at asc`)
+  return ([...rows] as Raw[]).map((r) => ({
+    id: r.id as string,
+    title: r.title as string,
+    description: r.description as string | null,
+    method: r.method as string,
+    source: r.source as string,
+    days: Number(r.days),
   }))
-  return { items, hasMore }
 }
 
-export async function getPropertyNotes(userId: string, dealId: string, tz: string): Promise<PropertyNoteItem[]> {
-  const rows = await db
-    .select()
-    .from(propertyNotes)
-    .where(and(eq(propertyNotes.userId, userId), eq(propertyNotes.dealId, dealId)))
-    .orderBy(desc(propertyNotes.createdAt), desc(propertyNotes.id))
-    .limit(200)
-  return rows.map((n) => ({ id: n.id, body: n.body, when: whenLabel(n.createdAt, tz) }))
+// ---------- unified timeline ----------
+export type TimelineItem =
+  | { source: 'exchange'; id: string; method: string; body: string; when: string }
+  | { source: 'property'; id: string; body: string; when: string }
+  | { source: 'event'; id: string; kind: string; data: Record<string, unknown>; when: string }
+
+const TIMELINE_PAGE = 50
+
+/** One chronological feed per deal: exchanges, property notes and system events merged, newest first. */
+export async function getTimeline(userId: string, dealId: string, tz: string, all: boolean) {
+  const lim = all ? 2000 : 60
+  const [ex, pn, ev] = await Promise.all([
+    db.select().from(notes).where(and(eq(notes.userId, userId), eq(notes.dealId, dealId))).orderBy(desc(notes.createdAt), desc(notes.id)).limit(lim),
+    db.select().from(propertyNotes).where(and(eq(propertyNotes.userId, userId), eq(propertyNotes.dealId, dealId))).orderBy(desc(propertyNotes.createdAt), desc(propertyNotes.id)).limit(lim),
+    db.select().from(activity).where(and(eq(activity.userId, userId), eq(activity.dealId, dealId))).orderBy(desc(activity.createdAt), desc(activity.id)).limit(lim),
+  ])
+  const rows: { at: Date; item: TimelineItem }[] = [
+    ...ex.map((n) => ({ at: n.createdAt, item: { source: 'exchange' as const, id: n.id, method: n.type, body: n.body, when: whenLabel(n.createdAt, tz) } })),
+    ...pn.map((n) => ({ at: n.createdAt, item: { source: 'property' as const, id: n.id, body: n.body, when: whenLabel(n.createdAt, tz) } })),
+    ...ev.map((a) => ({ at: a.createdAt, item: { source: 'event' as const, id: a.id, kind: a.kind, data: (a.data ?? {}) as Record<string, unknown>, when: whenLabel(a.createdAt, tz) } })),
+  ].sort((x, y) => y.at.getTime() - x.at.getTime())
+  const sliced = all ? rows : rows.slice(0, TIMELINE_PAGE)
+  return { items: sliced.map((r) => r.item), hasMore: !all && rows.length > TIMELINE_PAGE }
 }

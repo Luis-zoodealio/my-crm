@@ -3,7 +3,7 @@ import { asc, eq } from 'drizzle-orm'
 import { requireUser } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { savedViews } from '@/lib/db/schema'
-import { agentOptions, countDeals, followUpQueue, queryLeads } from '@/lib/leads/query'
+import { agentOptions, countDeals, followUpQueue, openTasksList, queryLeads } from '@/lib/leads/query'
 import { cleanRules } from '@/lib/leads/spec'
 import { parseLeadsParams, RulesSchema, SortsSchema } from '@/lib/leads/params'
 import type { ViewSpec } from '@/lib/views'
@@ -24,11 +24,12 @@ export default async function LeadsPage({ searchParams }: PageProps<'/leads'>) {
   })
 
   const params = parseLeadsParams(raw, views)
-  const [{ leads, total }, totalDeals, queue, agents] = await Promise.all([
+  const [{ leads, total }, totalDeals, queue, agents, openTasks] = await Promise.all([
     queryLeads(user.id, user.settings, params.rules, params.sorts, params.page),
     countDeals(user.id),
     followUpQueue(user.id, user.settings),
     agentOptions(user.id),
+    openTasksList(user.id, user.settings),
   ])
 
   // Page past the end (e.g. after narrowing filters): go back to page 1.
@@ -43,6 +44,7 @@ export default async function LeadsPage({ searchParams }: PageProps<'/leads'>) {
       total={total}
       totalDeals={totalDeals}
       queue={queue}
+      openTasks={openTasks}
       agents={agents}
       views={views}
       rules={params.rules}
