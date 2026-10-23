@@ -85,6 +85,20 @@ function Column({ column, staleDays }: { column: BoardColumn; staleDays: number 
               <span className="text-[15px] font-bold tracking-[-0.01em]">{fullAddress(d)}</span>
               <span className="text-[13px] text-gray-500">{d.agentName ?? 'No agent'}</span>
             </div>
+            <div>
+              {d.followUps >= 1 ? (
+                <span className="inline-flex items-center gap-1 rounded-full bg-[#fbe6f0] px-2 py-0.5 text-xs font-bold text-magenta">
+                  ↻ {d.followUps} follow-up{d.followUps === 1 ? '' : 's'}
+                </span>
+              ) : d.firstContactMade ? (
+                <span className="text-xs text-gray-400">No follow-ups yet</span>
+              ) : (
+                <span className="inline-flex items-center gap-1.5 text-xs font-bold text-[#b45309]">
+                  <span className="size-1.5 rounded-full bg-[#b45309]" />
+                  Needs first contact
+                </span>
+              )}
+            </div>
             <div className="flex flex-col gap-1 border-t border-border pt-2.5">
               <span className="text-xs text-gray-500">Offers</span>
               <div className="flex items-baseline justify-between">

@@ -31,8 +31,9 @@ CRM's Supabase database, so you do the sync directly.
      user; set `phone` from `agentPhone`.
    - Split `address` (`"Street, City, ST"`) into address / city / state.
    - Map offers from `offerExpirySummary.expiringOffers`:
-     **type 1 → `cash_offer`, type 0 → `cash_plus_offer`**.
-     (Verify this mapping against a real deal once — swap if reversed.)
+     **type 0 → `cash_offer`, type 1 → `cash_plus_offer`**.
+     (Rationale: single-offer deals always carry type 0, so type 0 is the
+     base cash offer and type 1 the optional cash-plus. Confirm with Luis.)
    - Insert into `crm.deals` with `stage = 0`, `lead_status = 'Warm'`,
      the `user_id` from step 3, and `dealiodesk_transaction_id` set.
 

@@ -5,10 +5,10 @@ import { Button } from '@/components/Button'
 import { ConfirmDialog } from '@/components/Modal'
 import { ScheduleModal } from '@/components/ScheduleModal'
 import {
-  addNote,
   addPropertyNote,
   deleteNote,
   deletePropertyNote,
+  logFollowUp,
   setLeadStatus,
   setStage,
   updateNote,
@@ -99,26 +99,71 @@ function TypeChips({ value, onChange }: { value: string; onChange: (t: (typeof C
   )
 }
 
-export function NoteComposer({ dealId }: { dealId: string }) {
+const inThreeDays = () => new Date(Date.now() + 3 * 864e5).toLocaleDateString('en-CA')
+
+/**
+ * Logs an exchange and, by default, schedules the next follow-up in one step.
+ * The first exchange on a deal is "first contact"; everything after counts as a follow-up.
+ */
+export function LogFollowUp({ dealId, hasContact }: { dealId: string; hasContact: boolean }) {
   const [text, setText] = useState('')
   const [type, setType] = useState<(typeof CONTACT_METHODS)[number]>('Call')
+  const [scheduleOn, setScheduleOn] = useState(true)
+  const [date, setDate] = useState(inThreeDays)
+  const [time, setTime] = useState('09:00')
+  const [nextMethod, setNextMethod] = useState<(typeof CONTACT_METHODS)[number]>('Call')
   const { pending, error, run } = useAction()
-  const submit = () => text.trim() && run(() => addNote(dealId, type, text), () => setText(''))
+  const submit = () =>
+    text.trim() &&
+    run(
+      () => logFollowUp({ dealId, type, body: text, next: scheduleOn ? { date, time, method: nextMethod } : null }),
+      () => setText(''),
+    )
+
+  const fieldClass = 'rounded-sm border border-border bg-white px-2.5 py-2 text-sm text-ink outline-none focus:border-magenta'
   return (
     <div className="flex flex-col gap-3 rounded-[14px] border border-border bg-white p-4">
       <textarea
         value={text}
         onChange={(e) => setText(e.target.value)}
         onKeyDown={(e) => (e.metaKey || e.ctrlKey) && e.key === 'Enter' && submit()}
-        placeholder="Add a note about this deal"
-        aria-label="Note"
+        placeholder={hasContact ? 'What happened on this call, text or email?' : 'Log your first contact with the agent'}
+        aria-label="What happened"
         rows={3}
         maxLength={5000}
         className="resize-none bg-transparent text-[15px] leading-normal text-ink outline-none"
       />
-      <div className="flex flex-wrap items-center justify-between gap-2.5">
+      <div className="flex flex-wrap items-center gap-2.5">
+        <span className="text-[13px] font-semibold text-gray-700">How</span>
         <TypeChips value={type} onChange={setType} />
-        <Button size="xs" onClick={submit} disabled={pending || !text.trim()}>Log an exchange</Button>
+      </div>
+
+      <div className="flex flex-col gap-2.5 rounded-md border border-border bg-bg p-3">
+        <label className="flex cursor-pointer items-center gap-2 text-[13px] font-semibold">
+          <input type="checkbox" checked={scheduleOn} onChange={(e) => setScheduleOn(e.target.checked)} className="size-4 accent-[#ac0a55]" />
+          Schedule next follow-up
+        </label>
+        {scheduleOn && (
+          <div className="flex flex-col gap-2.5">
+            <div className="grid grid-cols-2 gap-2.5">
+              <label className="flex flex-col gap-1 text-xs font-semibold text-gray-700">
+                Date
+                <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className={fieldClass} />
+              </label>
+              <label className="flex flex-col gap-1 text-xs font-semibold text-gray-700">
+                Time
+                <input type="time" value={time} onChange={(e) => setTime(e.target.value)} className={fieldClass} />
+              </label>
+            </div>
+            <TypeChips value={nextMethod} onChange={setNextMethod} />
+          </div>
+        )}
+      </div>
+
+      <div className="flex justify-end">
+        <Button size="xs" onClick={submit} disabled={pending || !text.trim()}>
+          {pending ? 'Saving…' : 'Log exchange'}
+        </Button>
       </div>
       <Err msg={error} />
     </div>

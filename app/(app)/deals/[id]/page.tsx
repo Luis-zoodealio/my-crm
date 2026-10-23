@@ -5,7 +5,7 @@ import { getDealDetail, getNotes, getPropertyNotes } from '@/lib/deals/query'
 import { fullAddress, money, plural } from '@/lib/format'
 import { LAST_ACTIVE_STAGE, STAGES } from '@/lib/stages'
 import { BackLink } from '@/components/BackLink'
-import { FollowUpButton, LeadStatusPills, NoteComposer, NoteFeed, PropertyNotes, StageBar } from './DealParts'
+import { FollowUpButton, LeadStatusPills, LogFollowUp, NoteFeed, PropertyNotes, StageBar } from './DealParts'
 
 const FROM: Record<string, { label: string; href: string }> = {
   dashboard: { label: 'Dashboard', href: '/dashboard' },
@@ -72,7 +72,7 @@ export default async function DealPage({ params, searchParams }: PageProps<'/dea
 
       <div className="grid grid-cols-1 items-start gap-5 min-[1200px]:grid-cols-[minmax(0,1fr)_340px]">
         <div className="flex flex-col gap-3.5">
-          <NoteComposer dealId={deal.id} />
+          <LogFollowUp dealId={deal.id} hasContact={feed.items.length > 0} />
           {feed.items.length === 0 && (
             <p className="rounded-[14px] border border-border bg-white p-4 text-sm text-gray-500">No exchanges logged yet. Log your first call, text or email above.</p>
           )}
@@ -83,11 +83,27 @@ export default async function DealPage({ params, searchParams }: PageProps<'/dea
         </div>
 
         <div className="flex flex-col gap-3.5">
-          <div className="flex flex-col gap-1 rounded-xl bg-magenta p-5 text-white">
-            <span className="text-[13px] opacity-90">Current offers</span>
-            <div className="flex items-baseline justify-between"><span className="text-[13px] opacity-90">Cash</span><span className="text-[26px] font-extrabold tracking-[-0.04em]">{money(deal.cashOffer)}</span></div>
-            <div className="flex items-baseline justify-between"><span className="text-[13px] opacity-90">Cash+</span><span className="text-[26px] font-extrabold tracking-[-0.04em]">{money(deal.cashPlusOffer)}</span></div>
-            <span className="text-[13px]">{STAGES[deal.stage].name}</span>
+          <div className="flex flex-col gap-3 rounded-[14px] border border-border bg-white p-[18px]">
+            <h2 className="text-[13px] font-bold uppercase tracking-[.04em]">Follow-ups</h2>
+            <div className="flex items-baseline gap-2">
+              <span className="text-[30px] font-extrabold tracking-[-0.03em]">{deal.followUps}</span>
+              <span className="text-sm text-gray-500">{deal.followUps === 1 ? 'follow-up' : 'follow-ups'}</span>
+            </div>
+            <div className="flex flex-col gap-2 text-sm">
+              <div className="flex justify-between gap-2 border-t border-border pt-2">
+                <span className="text-gray-500">Last follow-up</span>
+                <span className="font-semibold">{deal.followUps >= 1 ? (deal.daysSinceContact === 0 ? 'Today' : `${plural(deal.daysSinceContact, 'day')} ago`) : 'None yet'}</span>
+              </div>
+              <div className="flex justify-between gap-2 border-t border-border pt-2">
+                <span className="text-gray-500">Next scheduled</span>
+                <span className="font-semibold" style={{ color: fuColor }}>{fuLabel}</span>
+              </div>
+              <div className="flex justify-between gap-2 border-t border-border pt-2">
+                <span className="text-gray-500">First contact</span>
+                <span className="font-semibold">{deal.firstContactDays === null ? 'Not made yet' : deal.firstContactDays === 0 ? 'Today' : `${plural(deal.firstContactDays, 'day')} ago`}</span>
+              </div>
+            </div>
+            {fu && <span className="text-sm text-gray-500">{fu.title} · {fu.method}{fu.description ? ` — ${fu.description}` : ''}</span>}
           </div>
 
           <div className="flex flex-col gap-3 rounded-[14px] border border-border bg-white p-[18px]">
@@ -112,11 +128,11 @@ export default async function DealPage({ params, searchParams }: PageProps<'/dea
             )}
           </div>
 
-          <div className="flex flex-col gap-1.5 rounded-[14px] border border-border bg-white p-[18px]">
-            <h2 className="text-[13px] font-bold uppercase tracking-[.04em]">Next follow-up</h2>
-            <span className="text-xl font-extrabold tracking-[-0.02em]" style={{ color: fuColor }}>{fuLabel}</span>
-            {fu && <span className="text-sm text-gray-500">{fu.title} · {fu.method}</span>}
-            {fu?.description && <span className="text-sm leading-normal text-gray-700">{fu.description}</span>}
+          <div className="flex flex-col gap-1 rounded-xl bg-magenta p-5 text-white">
+            <span className="text-[13px] opacity-90">Current offers</span>
+            <div className="flex items-baseline justify-between"><span className="text-[13px] opacity-90">Cash</span><span className="text-[26px] font-extrabold tracking-[-0.04em]">{money(deal.cashOffer)}</span></div>
+            <div className="flex items-baseline justify-between"><span className="text-[13px] opacity-90">Cash+</span><span className="text-[26px] font-extrabold tracking-[-0.04em]">{money(deal.cashPlusOffer)}</span></div>
+            <span className="text-[13px]">{STAGES[deal.stage].name}</span>
           </div>
 
           <PropertyNotes dealId={deal.id} items={propertyNotes} />

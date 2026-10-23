@@ -17,6 +17,8 @@ export type BoardCard = {
   cashPlusOffer: number | null
   agentName: string | null
   daysSinceContact: number
+  followUps: number
+  firstContactMade: boolean
 }
 
 export type BoardColumn = { stage: number; total: number; cards: BoardCard[] }
@@ -30,6 +32,7 @@ const SELECT = sql`
   d.id, d.address, d.city, d.state, d.zip, d.stage, d.lead_status,
   d.cash_offer::float8 as cash_offer, d.cash_plus_offer::float8 as cash_plus_offer,
   a.name as agent_name,
+  (select count(*)::int from crm.notes n where n.deal_id = d.id) as note_count,
   floor(extract(epoch from (now() - d.last_contact_at)) / 86400)::int as days`
 
 const toCard = (r: Raw): BoardCard => ({
@@ -44,6 +47,9 @@ const toCard = (r: Raw): BoardCard => ({
   cashPlusOffer: r.cash_plus_offer as number | null,
   agentName: r.agent_name as string | null,
   daysSinceContact: Number(r.days),
+  // A follow-up is any logged exchange after the first contact.
+  followUps: Math.max(0, Number(r.note_count) - 1),
+  firstContactMade: Number(r.note_count) > 0,
 })
 
 /** First COLUMN_PAGE cards of every stage, plus each stage's true total. */

@@ -96,6 +96,8 @@ export type LeadRow = {
   cashPlusOffer: number | null
   agentName: string | null
   daysSinceContact: number
+  followUps: number
+  firstContactMade: boolean
 }
 
 export async function queryLeads(userId: string, settings: UserSettings, rules: Rule[], sorts: Sort[], page: number) {
@@ -105,6 +107,7 @@ export async function queryLeads(userId: string, settings: UserSettings, rules: 
            d.cash_offer::float8 as cash_offer, d.cash_plus_offer::float8 as cash_plus_offer,
            a.name as agent_name,
            ${DAYS_SINCE_CONTACT}::int as days_since_contact,
+           (select count(*)::int from crm.notes n where n.deal_id = d.id) as note_count,
            count(*) over () as total
       from crm.deals d
       left join crm.agents a on a.id = d.agent_id
@@ -126,6 +129,8 @@ export async function queryLeads(userId: string, settings: UserSettings, rules: 
     cashPlusOffer: r.cash_plus_offer as number | null,
     agentName: r.agent_name as string | null,
     daysSinceContact: Number(r.days_since_contact),
+    followUps: Math.max(0, Number(r.note_count) - 1),
+    firstContactMade: Number(r.note_count) > 0,
   }))
   return { leads, total: list.length ? Number(list[0].total) : 0 }
 }

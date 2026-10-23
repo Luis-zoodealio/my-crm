@@ -170,6 +170,49 @@ export async function addNote(dealId: string, type: string, body: string): Promi
   }
 }
 
+/**
+ * Logs an exchange and, unless `next` is null, (re)schedules the deal's next follow-up in one step.
+ * A follow-up is any exchange after the first contact, so the count falls out of the note history.
+ */
+const LogFollowUpInput = z.object({
+  dealId: id,
+  type: z.enum(CONTACT_METHODS),
+  body: NoteBody,
+  next: z
+    .object({
+      date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Pick a date.'),
+      time: z.string().regex(/^\d{2}:\d{2}$/, 'Pick a time.'),
+      method: z.enum(CONTACT_METHODS),
+    })
+    .nullable(),
+})
+
+export async function logFollowUp(input: z.input<typeof LogFollowUpInput>): Promise<Result> {
+  try {
+    const user = await requireUser()
+    const v = LogFollowUpInput.parse(input)
+    await db.transaction(async (tx) => {
+      // FK (deal_id, user_id) -> crm.deals enforces that the deal belongs to this user.
+      await tx.insert(notes).values({ userId: user.id, dealId: v.dealId, type: v.type, body: v.body, createdBy: user.id })
+      if (v.next) {
+        await tx.delete(tasks).where(and(eq(tasks.userId, user.id), eq(tasks.dealId, v.dealId), eq(tasks.source, 'Follow-up'), eq(tasks.done, false)))
+        await tx.insert(tasks).values({
+          userId: user.id,
+          dealId: v.dealId,
+          title: 'Follow up',
+          dueAt: sql`((${v.next.date}::date + ${v.next.time}::time) at time zone ${user.settings.timezone})`,
+          method: v.next.method,
+          source: 'Follow-up',
+        })
+      }
+    })
+    refresh()
+    return { ok: true }
+  } catch (e) {
+    return fail(e)
+  }
+}
+
 export async function updateNote(noteId: string, type: string, body: string): Promise<Result> {
   try {
     const user = await requireUser()

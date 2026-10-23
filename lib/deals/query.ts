@@ -18,6 +18,8 @@ export type DealDetail = {
   cashOffer: number | null
   cashPlusOffer: number | null
   daysSinceContact: number
+  followUps: number
+  firstContactDays: number | null
   agent: { id: string; name: string; agency: string | null; phone: string | null; email: string | null; dealCount: number } | null
   followUp: { title: string; description: string | null; method: string; days: number } | null
 }
@@ -45,6 +47,8 @@ export async function getDealDetail(userId: string, id: string, settings: UserSe
     select d.id, d.address, d.city, d.state, d.zip, d.stage, d.lead_status,
            d.cash_offer::float8 as cash_offer, d.cash_plus_offer::float8 as cash_plus_offer,
            floor(extract(epoch from (now() - d.last_contact_at)) / 86400)::int as days_since_contact,
+           (select count(*)::int from crm.notes n where n.deal_id = d.id) as note_count,
+           floor(extract(epoch from (now() - (select min(n.created_at) from crm.notes n where n.deal_id = d.id))) / 86400)::int as first_contact_days,
            a.id as agent_id, a.name as agent_name, a.agency, a.phone, a.email,
            (select count(*)::int from crm.deals x where x.agent_id = d.agent_id and x.user_id = d.user_id) as agent_deals,
            fu.title as fu_title, fu.description as fu_description, fu.method as fu_method,
@@ -71,6 +75,8 @@ export async function getDealDetail(userId: string, id: string, settings: UserSe
     cashOffer: r.cash_offer as number | null,
     cashPlusOffer: r.cash_plus_offer as number | null,
     daysSinceContact: Number(r.days_since_contact),
+    followUps: Math.max(0, Number(r.note_count) - 1),
+    firstContactDays: Number(r.note_count) > 0 ? Number(r.first_contact_days) : null,
     agent: r.agent_id
       ? {
           id: r.agent_id as string,

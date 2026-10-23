@@ -311,8 +311,17 @@ export function LeadsView(props: Props) {
                       </Link>
                     </div>
                     <div role="cell" className="text-sm text-gray-700">{STAGES[d.stage].name}</div>
-                    <div role="cell" className={`text-[13px] ${stale ? 'font-bold text-[#b45309]' : 'font-medium text-gray-500'}`}>
-                      {d.daysSinceContact === 0 ? 'Today' : stale ? `${d.daysSinceContact}d, stale` : `${d.daysSinceContact}d ago`}
+                    <div role="cell" className="text-[13px]">
+                      <span className={stale ? 'font-bold text-[#b45309]' : 'font-medium text-gray-500'}>
+                        {d.daysSinceContact === 0 ? 'Today' : stale ? `${d.daysSinceContact}d, stale` : `${d.daysSinceContact}d ago`}
+                      </span>
+                      {d.followUps >= 1 ? (
+                        <span className="mt-0.5 block text-xs font-bold text-magenta">↻ {d.followUps} follow-up{d.followUps === 1 ? '' : 's'}</span>
+                      ) : d.firstContactMade ? (
+                        <span className="mt-0.5 block text-xs font-medium text-gray-400">No follow-ups</span>
+                      ) : (
+                        <span className="mt-0.5 block text-xs font-bold text-[#b45309]">Needs first contact</span>
+                      )}
                     </div>
                     <div role="cell" className="flex flex-col gap-0.5 text-[13px]">
                       <div className="flex justify-between gap-2"><span className="text-gray-500">Cash</span><span className="font-extrabold tracking-[-0.02em]">{money(d.cashOffer)}</span></div>
