@@ -6,7 +6,7 @@ import { getDealDetail, getOpenTasks, getTimeline } from '@/lib/deals/query'
 import { fullAddress, money, plural } from '@/lib/format'
 import { LAST_ACTIVE_STAGE, STAGES } from '@/lib/stages'
 import { BackLink } from '@/components/BackLink'
-import { ActivityComposer, CadenceControl, FollowUpButton, LeadStatusPills, OpenTasks, StageBar, Timeline } from './DealParts'
+import { ActivityComposer, CadenceControl, EquityPills, FollowUpButton, LeadStatusPills, OpenTasks, StageBar, Timeline } from './DealParts'
 
 const FROM: Record<string, { label: string; href: string }> = {
   dashboard: { label: 'Dashboard', href: '/dashboard' },
@@ -106,6 +106,11 @@ export default async function DealPage({ params, searchParams }: PageProps<'/dea
                 <span className="font-semibold">{deal.firstContactDays === null ? 'Not made yet' : deal.firstContactDays === 0 ? 'Today' : `${plural(deal.firstContactDays, 'day')} ago`}</span>
               </div>
             </div>
+          </div>
+
+          <div className="flex flex-col gap-3 rounded-[14px] border border-border bg-white p-[18px]">
+            <h2 className="text-[13px] font-bold uppercase tracking-[.04em]">Equity</h2>
+            <EquityPills dealId={deal.id} current={deal.equityStatus} />
           </div>
 
           <CadenceControl

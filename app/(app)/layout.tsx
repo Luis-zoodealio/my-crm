@@ -1,6 +1,8 @@
 import { Sidebar } from '@/components/Sidebar'
+import { GlobalSearch } from '@/components/GlobalSearch'
 import { requireUser } from '@/lib/auth'
 import { getNavCounts } from '@/lib/queries/nav'
+import { dateLine } from '@/lib/format'
 
 export default async function AppLayout({ children }: LayoutProps<'/'>) {
   const user = await requireUser()
@@ -15,7 +17,13 @@ export default async function AppLayout({ children }: LayoutProps<'/'>) {
         Skip to content
       </a>
       <Sidebar counts={counts} staleDays={user.settings.staleDays} email={user.email} />
-      <main id="main" tabIndex={-1} className="flex min-w-0 flex-1 flex-col gap-6 px-9 pb-12 pt-8 outline-none">{children}</main>
+      <main id="main" tabIndex={-1} className="flex min-w-0 flex-1 flex-col gap-6 px-9 pb-12 pt-8 outline-none">
+        <div className="flex items-center justify-between gap-4">
+          <span className="text-sm text-gray-500">{dateLine(user.settings.timezone)}</span>
+          <GlobalSearch />
+        </div>
+        {children}
+      </main>
     </div>
   )
 }

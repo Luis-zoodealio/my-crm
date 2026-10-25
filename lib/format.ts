@@ -38,3 +38,13 @@ export function dueLabel(d: Date, timezone: string, now = new Date()): string {
 export function lastContactLabel(days: number, stale: boolean): string {
   return days === 0 ? 'Today' : stale ? `${days}d, stale` : `${days}d ago`
 }
+
+/** "Oct 20th" — abbreviated month + ordinal day in the user's timezone. */
+export function lastContactDate(isoStr: string, timezone: string): string {
+  const d = new Date(isoStr)
+  const month = new Intl.DateTimeFormat('en-US', { month: 'short', timeZone: timezone }).format(d)
+  const day = Number(new Intl.DateTimeFormat('en-US', { day: 'numeric', timeZone: timezone }).format(d))
+  const v = day % 100
+  const sfx = (v >= 11 && v <= 13) ? 'th' : ['th', 'st', 'nd', 'rd'][day % 10] ?? 'th'
+  return `${month} ${day}${sfx}`
+}

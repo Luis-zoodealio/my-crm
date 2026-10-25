@@ -10,6 +10,7 @@ import {
   deleteNote,
   deletePropertyNote,
   logFollowUp,
+  setEquityStatus,
   setLeadStatus,
   setStage,
   updateNote,
@@ -19,7 +20,7 @@ import {
 import { setDealCadence } from '@/lib/cadences/actions'
 import type { DealTask, NoteItem, TimelineItem } from '@/lib/deals/query'
 import { money } from '@/lib/format'
-import { CONTACT_METHODS, LEAD_STATUS_COLORS, LEAD_STATUSES, STAGES, type LeadStatus } from '@/lib/stages'
+import { CONTACT_METHODS, EQUITY_STATUSES, LEAD_STATUS_COLORS, LEAD_STATUSES, STAGES, type LeadStatus } from '@/lib/stages'
 
 /** Runs a server action in a transition and keeps its error message. */
 function useAction() {
@@ -400,6 +401,39 @@ export function CadenceControl({
       )}
       <Err msg={error} />
     </div>
+  )
+}
+
+const EQUITY_STYLES: Record<string, { bg: string; fg: string }> = {
+  'Unconfirmed': { bg: '#f3f2f0', fg: '#71717a' },
+  'Has Equity':  { bg: '#d1fae5', fg: '#065f46' },
+  'No Equity':   { bg: '#fbe6f0', fg: '#ac0a55' },
+}
+
+export function EquityPills({ dealId, current }: { dealId: string; current: string }) {
+  const { pending, error, run } = useAction()
+  return (
+    <>
+      <div className="flex flex-wrap gap-1.5">
+        {EQUITY_STATUSES.map((s) => {
+          const c = EQUITY_STYLES[s] ?? EQUITY_STYLES['Unconfirmed']
+          return (
+            <button
+              key={s}
+              type="button"
+              disabled={pending}
+              aria-pressed={current === s}
+              onClick={() => current !== s && run(() => setEquityStatus(dealId, s))}
+              className="inline-flex cursor-pointer items-center rounded-full px-3 py-1.5 text-xs font-bold transition-opacity"
+              style={{ background: c.bg, color: c.fg, border: `1.5px solid ${current === s ? c.fg : 'transparent'}` }}
+            >
+              {s}
+            </button>
+          )
+        })}
+      </div>
+      <Err msg={error} />
+    </>
   )
 }
 

@@ -6,7 +6,7 @@ import { z } from 'zod'
 import { requireUser } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { activity, agents, deals, notes, propertyNotes, tasks } from '@/lib/db/schema'
-import { CONTACT_METHODS, LEAD_STATUSES } from '@/lib/stages'
+import { CONTACT_METHODS, EQUITY_STATUSES, LEAD_STATUSES } from '@/lib/stages'
 
 export type Result<T = object> = ({ ok: true } & T) | { ok: false; error: string; fieldErrors?: Record<string, string> }
 
@@ -164,6 +164,19 @@ export async function setLeadStatus(dealId: string, status: string): Promise<Res
       const res = await tx.update(deals).set({ leadStatus: s }).where(and(eq(deals.id, did), eq(deals.userId, user.id))).returning({ id: deals.id })
       if (res.length && cur && cur.leadStatus !== s) await logActivity(tx, user.id, did, 'status_changed', { from: cur.leadStatus, to: s })
     })
+    refresh()
+    return { ok: true }
+  } catch (e) {
+    return fail(e)
+  }
+}
+
+export async function setEquityStatus(dealId: string, status: string): Promise<Result> {
+  try {
+    const user = await requireUser()
+    const did = id.parse(dealId)
+    const s = z.enum(EQUITY_STATUSES).parse(status)
+    await db.update(deals).set({ equityStatus: s }).where(and(eq(deals.id, did), eq(deals.userId, user.id)))
     refresh()
     return { ok: true }
   } catch (e) {

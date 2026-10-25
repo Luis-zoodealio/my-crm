@@ -3,7 +3,7 @@ import { ButtonLink } from '@/components/Button'
 import { DashboardEmpty } from './DashboardEmpty'
 import { requireUser } from '@/lib/auth'
 import { getDashboard, type DashboardRow } from '@/lib/queries/dashboard'
-import { compactMoney, dateLine, fullAddress, plural } from '@/lib/format'
+import { compactMoney, fullAddress, plural } from '@/lib/format'
 import { STAGES } from '@/lib/stages'
 import { leadsViewHref, staleHref } from '@/lib/views'
 
@@ -32,12 +32,9 @@ export default async function DashboardPage() {
   return (
     <>
       <div className="flex flex-wrap items-end justify-between gap-4">
-        <div className="flex flex-col gap-1">
-          <span className="text-sm text-gray-500">{dateLine(user.settings.timezone)}</span>
-          <h1 className="text-[32px] font-bold leading-[1.1] tracking-[-0.03em]">
-            {data.totalDeals === 0 ? 'Welcome to Zoodealio CRM.' : greeting}
-          </h1>
-        </div>
+        <h1 className="text-[32px] font-bold leading-[1.1] tracking-[-0.03em]">
+          {data.totalDeals === 0 ? 'Welcome to Zoodealio CRM.' : greeting}
+        </h1>
         <ButtonLink href="/deals/new">+ Add deal</ButtonLink>
       </div>
 

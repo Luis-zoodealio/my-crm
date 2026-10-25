@@ -28,3 +28,6 @@ export const LEAD_STATUS_COLORS: Record<LeadStatus, { bg: string; fg: string }> 
 }
 
 export const CONTACT_METHODS = ['Call', 'Text', 'Email', 'Voicemail', 'Zoom'] as const
+
+export const EQUITY_STATUSES = ['Unconfirmed', 'Has Equity', 'No Equity'] as const
+export type EquityStatus = (typeof EQUITY_STATUSES)[number]

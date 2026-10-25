@@ -13,6 +13,7 @@ export type DealDetail = {
   zip: string | null
   stage: number
   leadStatus: string
+  equityStatus: string
   cashOffer: number | null
   cashPlusOffer: number | null
   daysSinceContact: number
@@ -42,7 +43,7 @@ export async function getDealDetail(userId: string, id: string, settings: UserSe
   if (!z.uuid().safeParse(id).success) return null
   const tz = settings.timezone
   const [r] = (await db.execute(sql`
-    select d.id, d.address, d.city, d.state, d.zip, d.stage, d.lead_status,
+    select d.id, d.address, d.city, d.state, d.zip, d.stage, d.lead_status, d.equity_status,
            d.cash_offer::float8 as cash_offer, d.cash_plus_offer::float8 as cash_plus_offer,
            floor(extract(epoch from (now() - d.last_contact_at)) / 86400)::int as days_since_contact,
            (select count(*)::int from crm.notes n where n.deal_id = d.id) as note_count,
@@ -72,6 +73,7 @@ export async function getDealDetail(userId: string, id: string, settings: UserSe
     zip: r.zip as string | null,
     stage: Number(r.stage),
     leadStatus: r.lead_status as string,
+    equityStatus: r.equity_status as string,
     cashOffer: r.cash_offer as number | null,
     cashPlusOffer: r.cash_plus_offer as number | null,
     daysSinceContact: Number(r.days_since_contact),

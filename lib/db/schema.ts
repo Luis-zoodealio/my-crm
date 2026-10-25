@@ -17,7 +17,7 @@ export const crm = pgSchema('crm')
 export const userSettings = crm.table('user_settings', {
   userId: uuid('user_id').primaryKey(),
   staleDays: integer('stale_days').notNull().default(7),
-  timezone: text('timezone').notNull().default('America/Chicago'),
+  timezone: text('timezone').notNull().default('America/Phoenix'),
 })
 
 export const agents = crm.table('agents', {
@@ -48,6 +48,7 @@ export const deals = crm.table('deals', {
   dealiodeskTransactionId: text('dealiodesk_transaction_id').unique(),
   cadenceId: uuid('cadence_id'),
   cadenceStep: integer('cadence_step').notNull().default(0),
+  equityStatus: text('equity_status').notNull().default('Unconfirmed'),
 })
 
 export const cadences = crm.table('cadences', {

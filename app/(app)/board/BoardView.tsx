@@ -6,10 +6,10 @@ import { Button, ButtonLink } from '@/components/Button'
 import { LeadPill } from '@/components/LeadPill'
 import { loadBoardColumn } from '@/lib/board/actions'
 import type { BoardCard, BoardColumn } from '@/lib/board/query'
-import { compactMoney, fullAddress, lastContactLabel } from '@/lib/format'
+import { compactMoney, fullAddress, lastContactDate, lastContactLabel } from '@/lib/format'
 import { LAST_ACTIVE_STAGE, STAGES } from '@/lib/stages'
 
-export function BoardView({ columns, staleDays }: { columns: BoardColumn[]; staleDays: number }) {
+export function BoardView({ columns, staleDays, timezone }: { columns: BoardColumn[]; staleDays: number; timezone: string }) {
   const totalDeals = columns.reduce((n, c) => n + c.total, 0)
 
   return (
@@ -29,7 +29,7 @@ export function BoardView({ columns, staleDays }: { columns: BoardColumn[]; stal
         <div className="flex items-start gap-3.5 overflow-x-auto pb-3">
           {columns.map((col) => (
             // Remount when the server data changes so loaded-more cards never go stale.
-            <Column key={`${col.stage}:${col.total}:${col.cards.map((c) => c.id.slice(0, 6)).join('')}`} column={col} staleDays={staleDays} />
+            <Column key={`${col.stage}:${col.total}:${col.cards.map((c) => c.id.slice(0, 6)).join('')}`} column={col} staleDays={staleDays} timezone={timezone} />
           ))}
         </div>
       )}
@@ -37,7 +37,7 @@ export function BoardView({ columns, staleDays }: { columns: BoardColumn[]; stal
   )
 }
 
-function Column({ column, staleDays }: { column: BoardColumn; staleDays: number }) {
+function Column({ column, staleDays, timezone }: { column: BoardColumn; staleDays: number; timezone: string }) {
   const [extra, setExtra] = useState<BoardCard[]>([])
   const [total, setTotal] = useState(column.total)
   const [error, setError] = useState('')
@@ -85,19 +85,18 @@ function Column({ column, staleDays }: { column: BoardColumn; staleDays: number 
               <span className="text-[15px] font-bold tracking-[-0.01em]">{fullAddress(d)}</span>
               <span className="text-[13px] text-gray-500">{d.agentName ?? 'No agent'}</span>
             </div>
-            <div>
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-xs text-gray-500">{lastContactDate(d.lastContactAt, timezone)}</span>
               {d.followUps >= 1 ? (
                 <span className="inline-flex items-center gap-1 rounded-full bg-[#fbe6f0] px-2 py-0.5 text-xs font-bold text-magenta">
-                  ↻ {d.followUps} follow-up{d.followUps === 1 ? '' : 's'}
+                  ↻ {d.followUps}
                 </span>
-              ) : d.firstContactMade ? (
-                <span className="text-xs text-gray-400">No follow-ups yet</span>
-              ) : (
+              ) : !d.firstContactMade ? (
                 <span className="inline-flex items-center gap-1.5 text-xs font-bold text-[#b45309]">
                   <span className="size-1.5 rounded-full bg-[#b45309]" />
-                  Needs first contact
+                  1st contact
                 </span>
-              )}
+              ) : null}
             </div>
             <div className="flex flex-col gap-1 border-t border-border pt-2.5">
               <span className="text-xs text-gray-500">Offers</span>
