@@ -23,6 +23,8 @@ export async function proxy(request: NextRequest) {
     }
   )
 
+  if (process.env.SKIP_AUTH === 'true') return supabaseResponse
+
   const { data: { user } } = await supabase.auth.getUser()
 
   const path = request.nextUrl.pathname

@@ -11,6 +11,11 @@ export type SessionUser = { id: string; email: string; settings: UserSettings }
  * cookie, without a second network round trip.
  */
 export const requireUser = cache(async (): Promise<SessionUser> => {
+  if (process.env.SKIP_AUTH === 'true') {
+    const id = process.env.DEV_USER_ID!
+    const settings = await ensureUserSetup(id)
+    return { id, email: process.env.DEV_USER_EMAIL ?? '', settings }
+  }
   const supabase = await createClient()
   const { data } = await supabase.auth.getClaims()
   const claims = data?.claims
