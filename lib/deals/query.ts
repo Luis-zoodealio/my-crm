@@ -99,13 +99,15 @@ export async function getDealDetail(userId: string, id: string, settings: UserSe
 }
 
 // ---------- open tasks on a deal ----------
-export type DealTask = { id: string; title: string; description: string | null; method: string; source: string; days: number }
+export type DealTask = { id: string; title: string; description: string | null; method: string; source: string; days: number; dueDate: string; dueTime: string }
 
 /** Every not-done task on the deal (follow-ups and manual), soonest due first. `days` is relative to today in the user's tz. */
 export async function getOpenTasks(userId: string, dealId: string, tz: string): Promise<DealTask[]> {
   const rows = await db.execute(sql`
     select t.id, t.title, t.description, t.method, t.source,
-           ((t.due_at at time zone ${tz})::date - (now() at time zone ${tz})::date)::int as days
+           ((t.due_at at time zone ${tz})::date - (now() at time zone ${tz})::date)::int as days,
+           to_char(t.due_at at time zone ${tz}, 'YYYY-MM-DD') as due_date,
+           to_char(t.due_at at time zone ${tz}, 'HH24:MI') as due_time
       from crm.tasks t
      where t.deal_id = ${dealId} and t.user_id = ${userId} and not t.done
      order by t.due_at asc`)
@@ -116,6 +118,8 @@ export async function getOpenTasks(userId: string, dealId: string, tz: string): 
     method: r.method as string,
     source: r.source as string,
     days: Number(r.days),
+    dueDate: r.due_date as string,
+    dueTime: r.due_time as string,
   }))
 }
 

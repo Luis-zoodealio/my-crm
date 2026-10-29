@@ -2,7 +2,7 @@ import 'server-only'
 import { sql, type SQL } from 'drizzle-orm'
 import type { UserSettings } from '@/lib/bootstrap'
 import { db } from '@/lib/db'
-import { dueLabel, fullAddress } from '@/lib/format'
+import { dueLabel, fullAddress, lastContactDate } from '@/lib/format'
 import { GROUP_PAGE, TASK_GROUPS, type TaskGroup } from './groups'
 
 const GROUP_MAX = 1000
@@ -15,7 +15,10 @@ export type TaskItem = {
   source: string
   done: boolean
   dueLabel: string
-  deal: { id: string; label: string; agentName: string | null } | null
+  dueDate: string
+  dueTime: string
+  deal: { id: string; label: string; agentId: string | null; agentName: string | null } | null
+  agentLastContactLabel: string | null
 }
 
 export type TaskGroups = Record<TaskGroup, { count: number; items: TaskItem[] }>
@@ -54,7 +57,14 @@ export async function getTaskGroups(userId: string, settings: UserSettings, limi
       db.execute(sql`
         select t.id, t.title, t.description, t.method, t.source, t.done,
                extract(epoch from t.due_at)::float8 as due_epoch,
-               d.id as deal_id, d.address, d.city, d.state, d.zip, a.name as agent_name,
+               to_char(t.due_at at time zone ${tz}, 'YYYY-MM-DD') as due_date,
+               to_char(t.due_at at time zone ${tz}, 'HH24:MI') as due_time,
+               d.id as deal_id, d.address, d.city, d.state, d.zip,
+               a.id as agent_id, a.name as agent_name,
+               (select extract(epoch from max(n.created_at))::float8
+                  from crm.notes n
+                  join crm.deals d2 on d2.id = n.deal_id and d2.user_id = t.user_id
+                 where d2.agent_id = a.id) as agent_last_contact_epoch,
                count(*) over () as total
           from crm.tasks t
           left join crm.deals d on d.id = t.deal_id and d.user_id = t.user_id
@@ -79,10 +89,16 @@ export async function getTaskGroups(userId: string, settings: UserSettings, limi
         source: r.source as string,
         done: r.done as boolean,
         dueLabel: dueLabel(new Date(Number(r.due_epoch) * 1000), tz, now),
+        dueDate: r.due_date as string,
+        dueTime: r.due_time as string,
+        agentLastContactLabel: r.agent_last_contact_epoch
+          ? lastContactDate(new Date(Number(r.agent_last_contact_epoch) * 1000).toISOString(), tz)
+          : null,
         deal: r.deal_id
           ? {
               id: r.deal_id as string,
               label: fullAddress({ address: r.address as string, city: r.city as string | null, state: r.state as string | null, zip: r.zip as string | null }),
+              agentId: r.agent_id as string | null,
               agentName: r.agent_name as string | null,
             }
           : null,

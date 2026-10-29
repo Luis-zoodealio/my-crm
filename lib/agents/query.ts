@@ -2,6 +2,7 @@ import 'server-only'
 import { sql, type SQL } from 'drizzle-orm'
 import { z } from 'zod'
 import { db } from '@/lib/db'
+import { fullAddress } from '@/lib/format'
 
 export const AGENTS_PAGE = 24
 export const AGENT_DEALS_PAGE = 25
@@ -86,6 +87,7 @@ export type AgentProfile = {
   email: string | null
   dealCount: number
   totalOffers: number
+  lastContactAt: string | null
 }
 
 export async function getAgent(userId: string, id: string): Promise<AgentProfile | null> {
@@ -93,7 +95,11 @@ export async function getAgent(userId: string, id: string): Promise<AgentProfile
   const [r] = [
     ...(await db.execute(sql`
       select a.id, a.name, a.agency, a.phone, a.email,
-             count(d.id)::int as deal_count, coalesce(sum(d.cash_offer), 0)::float8 as total_offers
+             count(d.id)::int as deal_count, coalesce(sum(d.cash_offer), 0)::float8 as total_offers,
+             (select max(n.created_at)
+                from crm.notes n
+                join crm.deals d2 on d2.id = n.deal_id and d2.user_id = a.user_id
+               where d2.agent_id = a.id) as last_contact_at
         from crm.agents a
         left join crm.deals d on d.agent_id = a.id and d.user_id = a.user_id
        where a.id = ${id} and a.user_id = ${userId}
@@ -108,7 +114,48 @@ export async function getAgent(userId: string, id: string): Promise<AgentProfile
     email: r.email as string | null,
     dealCount: Number(r.deal_count),
     totalOffers: Number(r.total_offers),
+    lastContactAt: r.last_contact_at ? String(r.last_contact_at) : null,
   }
+}
+
+export type AgentTask = {
+  id: string
+  title: string
+  description: string | null
+  method: string
+  source: string
+  days: number
+  dueDate: string
+  dueTime: string
+  dealId: string
+  dealLabel: string
+}
+
+export async function getAgentOpenTasks(userId: string, agentId: string, tz: string): Promise<AgentTask[]> {
+  const rows = [
+    ...(await db.execute(sql`
+      select t.id, t.title, t.description, t.method, t.source,
+             ((t.due_at at time zone ${tz})::date - (now() at time zone ${tz})::date)::int as days,
+             to_char(t.due_at at time zone ${tz}, 'YYYY-MM-DD') as due_date,
+             to_char(t.due_at at time zone ${tz}, 'HH24:MI') as due_time,
+             d.id as deal_id, d.address, d.city, d.state, d.zip
+        from crm.tasks t
+        join crm.deals d on d.id = t.deal_id and d.user_id = t.user_id
+       where d.agent_id = ${agentId} and t.user_id = ${userId} and not t.done
+       order by t.due_at asc`)),
+  ] as Raw[]
+  return rows.map((r) => ({
+    id: r.id as string,
+    title: r.title as string,
+    description: r.description as string | null,
+    method: r.method as string,
+    source: r.source as string,
+    days: Number(r.days),
+    dueDate: r.due_date as string,
+    dueTime: r.due_time as string,
+    dealId: r.deal_id as string,
+    dealLabel: fullAddress({ address: r.address as string, city: r.city as string | null, state: r.state as string | null, zip: r.zip as string | null }),
+  }))
 }
 
 export type AgentDeal = {
@@ -130,7 +177,7 @@ export async function getAgentDeals(userId: string, agentId: string, page: numbe
              d.cash_offer::float8 as cash_offer, d.cash_plus_offer::float8 as cash_plus_offer
         from crm.deals d
        where d.user_id = ${userId} and d.agent_id = ${agentId}
-       order by case when d.stage <= 9 then 0 else 1 end,
+       order by case when d.stage <= 7 then 0 else 1 end,
                 case d.lead_status when 'Hot' then 0 when 'Warm' then 1 when 'Cold' then 2 else 3 end,
                 d.last_contact_at asc, d.id
        limit ${AGENT_DEALS_PAGE} offset ${(page - 1) * AGENT_DEALS_PAGE}`)),

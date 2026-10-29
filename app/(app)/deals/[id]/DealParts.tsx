@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react'
 import { Button } from '@/components/Button'
 import { ConfirmDialog } from '@/components/Modal'
+import { OpenTasksList } from '@/components/OpenTasksList'
 import { ScheduleModal } from '@/components/ScheduleModal'
 import {
   addPropertyNote,
@@ -323,46 +324,13 @@ function NoteCard({ note }: { note: NoteItem }) {
 }
 
 export function OpenTasks({ dealId, dealLabel, tasks }: { dealId: string; dealLabel: string; tasks: DealTask[] }) {
-  const [adding, setAdding] = useState(false)
-  const { pending, error, run } = useAction()
   return (
-    <div className="flex flex-col gap-3 rounded-[14px] border border-border bg-white p-[18px]">
-      <div className="flex items-center justify-between">
-        <h2 className="text-[13px] font-bold uppercase tracking-[.04em]">Open tasks</h2>
-        <button type="button" onClick={() => setAdding(true)} className="cursor-pointer text-sm font-bold text-magenta">+ Add task</button>
-      </div>
-      {tasks.length === 0 ? (
-        <p className="text-sm text-gray-500">No open tasks — you&rsquo;re all caught up.</p>
-      ) : (
-        tasks.map((t) => <TaskRow key={t.id} task={t} pending={pending} onDone={() => run(() => completeTask(t.id))} />)
-      )}
-      <Err msg={error} />
-      {adding && <ScheduleModal mode="task" dealId={dealId} dealLabel={dealLabel} onClose={() => setAdding(false)} />}
-    </div>
-  )
-}
-
-function TaskRow({ task, pending, onDone }: { task: DealTask; pending: boolean; onDone: () => void }) {
-  const when = task.days < 0 ? `Overdue ${-task.days}d` : task.days === 0 ? 'Today' : task.days === 1 ? 'Tomorrow' : `In ${task.days}d`
-  const color = task.days < 0 ? '#e11d74' : task.days === 0 ? '#b45309' : '#71717a'
-  return (
-    <div className="flex items-start gap-2.5 border-t border-border pt-2.5 first:border-t-0 first:pt-0">
-      <button
-        type="button"
-        aria-label={`Mark "${task.title}" done`}
-        disabled={pending}
-        onClick={onDone}
-        className="mt-px size-[18px] flex-none cursor-pointer rounded-[5px] border-2 border-gray-300 transition-colors hover:border-magenta hover:bg-[#fbe6f0] disabled:opacity-50"
-      />
-      <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-        <span className="text-sm font-semibold leading-snug">{task.title}</span>
-        <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs">
-          <span className="font-bold" style={{ color }}>{when}</span>
-          <span className="text-gray-500">· {task.method}</span>
-          <span className={`rounded-full px-1.5 py-px text-[11px] font-semibold ${task.source === 'Follow-up' ? 'bg-[#fbe6f0] text-magenta' : 'bg-bg-warm text-gray-700'}`}>{task.source}</span>
-        </div>
-      </div>
-    </div>
+    <OpenTasksList
+      tasks={tasks.map((t) => ({ ...t, dealLabel }))}
+      completer={completeTask}
+      addDealId={dealId}
+      addDealLabel={dealLabel}
+    />
   )
 }
 

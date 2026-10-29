@@ -5,7 +5,7 @@ import { Button } from '@/components/Button'
 import { Modal } from '@/components/Modal'
 import { scheduleFollowUp } from '@/lib/deals/actions'
 import { CONTACT_METHODS } from '@/lib/stages'
-import { createTask, searchDeals } from '@/lib/tasks/actions'
+import { createTask, searchDeals, updateTask } from '@/lib/tasks/actions'
 
 const fieldClass = 'rounded-sm border border-border bg-white px-3 py-2.5 text-sm text-ink outline-none focus:border-magenta'
 
@@ -14,6 +14,7 @@ const tomorrow = () => new Date(Date.now() + 864e5).toLocaleDateString('en-CA')
 type Props =
   | { mode: 'followup'; dealId: string; dealLabel: string; onClose: () => void }
   | { mode: 'task'; dealId?: string; dealLabel?: string; onClose: () => void }
+  | { mode: 'editTask'; task: { id: string; title: string; description: string | null; dueDate: string; dueTime: string; method: string; dealLabel?: string | null }; onClose: () => void }
 
 type PickedDeal = { id: string; label: string }
 
@@ -21,15 +22,18 @@ type PickedDeal = { id: string; label: string }
  * Shared schedule modal.
  * - followup: from a deal. Sets the deal's next follow-up (replaces its open one).
  * - task: from Tasks. Creates a Manual task, optionally linked to a deal found by server-side search.
+ * - editTask: edits an existing task's title, description, date, time, and method.
  */
 export function ScheduleModal(props: Props) {
   const { onClose } = props
   const isTask = props.mode === 'task'
-  const [title, setTitle] = useState('')
-  const [description, setDescription] = useState('')
-  const [date, setDate] = useState(tomorrow)
-  const [time, setTime] = useState('09:00')
-  const [method, setMethod] = useState<(typeof CONTACT_METHODS)[number]>('Call')
+  const isEdit = props.mode === 'editTask'
+  const editTask = isEdit ? props.task : null
+  const [title, setTitle] = useState(editTask?.title ?? '')
+  const [description, setDescription] = useState(editTask?.description ?? '')
+  const [date, setDate] = useState(editTask?.dueDate ?? tomorrow())
+  const [time, setTime] = useState(editTask?.dueTime ?? '09:00')
+  const [method, setMethod] = useState<(typeof CONTACT_METHODS)[number]>((editTask?.method ?? 'Call') as (typeof CONTACT_METHODS)[number])
   const [deal, setDeal] = useState<PickedDeal | null>(null)
   const [error, setError] = useState('')
   const [pending, start] = useTransition()
@@ -40,22 +44,30 @@ export function ScheduleModal(props: Props) {
   function submit(e: React.FormEvent) {
     e.preventDefault()
     setError('')
-    if (isTask && !title.trim()) return setError('Give the task a title.')
+    if ((isTask || isEdit) && !title.trim()) return setError('Give the task a title.')
     start(async () => {
-      const res =
-        props.mode === 'followup'
-          ? await scheduleFollowUp({ dealId: props.dealId, title, description, date, time, method })
-          : await createTask({ dealId: presetDeal?.id ?? deal?.id ?? null, title, description, date, time, method })
+      let res
+      if (props.mode === 'followup') {
+        res = await scheduleFollowUp({ dealId: props.dealId, title, description, date, time, method })
+      } else if (props.mode === 'editTask') {
+        res = await updateTask(props.task.id, { title, description, date, time, method })
+      } else {
+        res = await createTask({ dealId: presetDeal?.id ?? deal?.id ?? null, title, description, date, time, method })
+      }
       if (!res.ok) setError(res.error)
       else onClose()
     })
   }
 
+  const modalTitle = isEdit ? 'Edit task' : isTask ? 'New task' : 'Set next follow-up'
+
   return (
-    <Modal title={isTask ? 'New task' : 'Set next follow-up'} onClose={onClose}>
+    <Modal title={modalTitle} onClose={onClose}>
       <form onSubmit={submit} className="flex flex-col gap-[18px]">
         {props.mode === 'followup' ? (
           <span className="text-sm text-gray-500">{props.dealLabel}</span>
+        ) : isEdit ? (
+          editTask?.dealLabel ? <span className="text-sm text-gray-500">{editTask.dealLabel}</span> : null
         ) : presetDeal ? (
           <span className="text-sm text-gray-500">{presetDeal.label}</span>
         ) : (
@@ -100,7 +112,7 @@ export function ScheduleModal(props: Props) {
         <div className="flex justify-end gap-2.5">
           <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
           <Button type="submit" disabled={pending}>
-            {pending ? 'Saving…' : isTask ? 'Add task' : 'Schedule follow-up'}
+            {pending ? 'Saving…' : isEdit ? 'Save changes' : isTask ? 'Add task' : 'Schedule follow-up'}
           </Button>
         </div>
       </form>

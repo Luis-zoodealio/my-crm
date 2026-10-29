@@ -72,6 +72,38 @@ export async function setTaskDone(taskId: string, done: boolean): Promise<Result
   }
 }
 
+const EditTask = z.object({
+  title: z.string().trim().min(1, 'Give the task a title.').max(200, 'Keep the title under 200 characters.'),
+  description: z
+    .string()
+    .trim()
+    .max(2000)
+    .transform((s) => (s === '' ? null : s)),
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Pick a date.'),
+  time: z.string().regex(/^\d{2}:\d{2}$/, 'Pick a time.'),
+  method: z.enum(CONTACT_METHODS),
+})
+
+export async function updateTask(taskId: string, input: { title: string; description: string; date: string; time: string; method: string }): Promise<Result> {
+  try {
+    const user = await requireUser()
+    const v = EditTask.parse(input)
+    await db
+      .update(tasks)
+      .set({
+        title: v.title,
+        description: v.description,
+        dueAt: sql`((${v.date}::date + ${v.time}::time) at time zone ${user.settings.timezone})`,
+        method: v.method,
+      })
+      .where(and(eq(tasks.id, id.parse(taskId)), eq(tasks.userId, user.id)))
+    refresh()
+    return { ok: true }
+  } catch (e) {
+    return fail(e)
+  }
+}
+
 export async function deleteTask(taskId: string): Promise<Result> {
   try {
     const user = await requireUser()
