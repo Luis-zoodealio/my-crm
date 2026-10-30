@@ -52,7 +52,7 @@ Filtering, sorting, search and paging all run in the database, so Leads, the dea
 - **Cash and Cash+** are two real stored columns on each deal.
 - **Last contact** is kept equal to the newest note by a database trigger (a new deal counts from its creation time).
 - **Follow-ups are tasks.** A deal's "next follow-up" is its earliest open Follow-up task. Setting a new one from a deal replaces the open one. Completing a task never edits the deal; the deal just moves on to its next follow-up, or "None scheduled". Tasks created from the Tasks page are always Manual.
-- **Stale** = an active deal (stages 0–9) with no contact for N days. N and your time zone are in **Settings**. The time zone decides "today" and "overdue".
+- **Stale** = an active deal (stages 0–7) with no contact for N days. N and your time zone are in **Settings**. The time zone decides "today" and "overdue".
 - **Saved views** are per user and stored as validated JSON. The four defaults are created on first sign-in.
 - **Bulk "Move to next stage"** advances active deals one stage and stops at Closed.
 
@@ -75,4 +75,3 @@ Add the three environment variables above to the project, run `npm run db:migrat
 ## Known gaps
 
 - No agent delete, no deal merge, no CSV import/export.
-- `app/api/dealio` (the Anthropic + DealioDesk MCP route) predates this build and is untouched; it needs `ANTHROPIC_API_KEY`, `DEALIO_MCP_URL`, `DEALIO_MCP_TOKEN`.
